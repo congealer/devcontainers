@@ -1,0 +1,23 @@
+{
+    "id": "rocky",
+    "version": "1.0.0",
+    "name": "Rocky linux based dev container",
+    "description": "Rocky linux based dev container with some useful tools",
+    "documentationURL": "https://github.com/congealer/devcontainers/tree/main/src/hello",
+    "licenseURL": "https://github.com/devcontainers/template-starter/blob/main/LICENSE",
+    "options": {
+        "imageVariant": {
+            "type": "string",
+            "description": "Rocky linux version (9, 8, or latest)",
+            "proposals": [
+                "latest",
+                "9",
+                "8"
+            ],
+            "default": "9"
+        }
+    },
+    "platforms": [
+        "Any"
+    ]
+}

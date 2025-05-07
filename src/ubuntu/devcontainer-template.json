@@ -1,0 +1,24 @@
+{
+    "id": "ubuntu",
+    "version": "1.0.0",
+    "name": "My ubuntu dev container",
+    "description": "My ubuntu dev container with some useful tools",
+    "documentationURL": "https://github.com/congealer/devcontainers/tree/main/src/hello",
+    "licenseURL": "https://github.com/devcontainers/template-starter/blob/main/LICENSE",
+    "options": {
+        "imageVariant": {
+            "type": "string",
+            "description": "Ubuntu version (Nobel: v24.04.2 LTS, Jammy: v22.04.5 LTS, or Focal: v20.04.6 LTS)",
+            "proposals": [
+                "noble",
+                "jammy",
+                "focal",
+                "bionic"
+            ],
+            "default": "noble"
+        }
+    },
+    "platforms": [
+        "Any"
+    ]
+}

@@ -26,7 +26,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/congealer/devcontainers
+          images: ghcr.io/Hyper-Accel/devcon-templates
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}

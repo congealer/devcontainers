@@ -13,7 +13,7 @@
 템플릿을 ghcr.io에 퍼블리시하려면:
 
 ```bash
-devcontainer templates publish ./src/ubuntu -n congealer/devcontainers -r ghcr.io
+devcontainer templates publish ./src/ubuntu -n Hyper-Accel/devcon-templates -r ghcr.io
 ```
 
 ## Apply
@@ -21,13 +21,13 @@ devcontainer templates publish ./src/ubuntu -n congealer/devcontainers -r ghcr.i
 템플릿을 프로젝트에 적용하려면:
 
 ```bash
-devcontainer templates apply -t ghcr.io/congealer/devcontainers/ubuntu --workspace-folder <my-project>
+devcontainer templates apply -t ghcr.io/Hyper-Accel/devcon-templates/ubuntu --workspace-folder <my-project>
 ```
 
 특정 Ubuntu 버전을 선택하려면:
 
 ```bash
-devcontainer templates apply -t ghcr.io/congealer/devcontainers/ubuntu -v noble --workspace-folder <my-project>
+devcontainer templates apply -t ghcr.io/Hyper-Accel/devcon-templates/ubuntu -v noble --workspace-folder <my-project>
 ```
 
 ---

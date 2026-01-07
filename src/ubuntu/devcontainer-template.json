@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "name": "My ubuntu dev container",
     "description": "My ubuntu dev container with some useful tools",
-    "documentationURL": "https://github.com/congealer/devcontainers/tree/main/src/hello",
+    "documentationURL": "https://github.com/Hyper-Accel/devcon-templates/tree/main/src/hello",
     "licenseURL": "https://github.com/devcontainers/template-starter/blob/main/LICENSE",
     "options": {
         "imageVariant": {

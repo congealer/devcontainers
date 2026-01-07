@@ -27,7 +27,7 @@ devcontainer templates apply -t ghcr.io/Hyper-Accel/devcon-templates/ubuntu --wo
 특정 Ubuntu 버전을 선택하려면:
 
 ```bash
-devcontainer templates apply -t ghcr.io/Hyper-Accel/devcon-templates/ubuntu -v noble --workspace-folder <my-project>
+devcontainer templates apply -t ghcr.io/Hyper-Accel/devcon-templates/ubuntu -a '{"imageVariant": "noble"}' --workspace-folder <my-project>
 ```
 
 ---

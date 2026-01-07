@@ -1,122 +1,60 @@
-# Dev Container Templates: Self Authoring Guide
+# Dev Container Templates
 
-> This repo provides a starting point and example for creating your own custom [Dev Container Templates](https://containers.dev/implementors/templates), hosted for free on GitHub Container Registry.  The example in this repository follows the [Dev Container Template distribution specification](https://containers.dev/implementors/templates-distribution/).  
->
-> To provide feedback on the distribution spec, please leave a comment [on spec issue #71](https://github.com/devcontainers/spec/issues/71).
+이 repo는 [https://github.com/devcontainers/template-starter](https://github.com/devcontainers/template-starter)로부터 출발했습니다.
+다양한 커스텀 Dev Container 템플릿들을 추가하여 관리하고 있습니다. (예: `ubuntu`)
 
-## Repo and Template Structure
+## Template 사용 방법
 
-This repository contains a _collection_ of two Templates - `hello` and `color`. These Templates serve as simple template implementations which helps containerize the project. Similar to the [`devcontainers/templates`](https://github.com/devcontainers/templates) repo, this repository has a `src` folder.  Each Template has its own sub-folder, containing at least a `devcontainer-template.json` and `.devcontainer/devcontainer.json`. 
+이 저장소의 템플릿(`src` 폴더 내)은 새로운 Dev Container 환경을 설정할 때 사용할 수 있습니다.
 
-```
-├── src
-│   ├── color
-│   │   ├── devcontainer-template.json
-│   │   └──| .devcontainer
-│   │      └── devcontainer.json
-│   ├── hello
-│   │   ├── devcontainer-template.json
-│   │   └──| .devcontainer
-│   │      ├── devcontainer.json
-│   │      └── Dockerfile
-|   ├── ...
-│   │   ├── devcontainer-template.json
-│   │   └──| .devcontainer
-│   │      └── devcontainer.json
-├── test
-│   ├── color
-│   │   └── test.sh
-│   ├── hello
-│   │   └── test.sh
-│   └──test-utils
-│      └── test-utils.sh
-...
+### 사용 가능한 템플릿
+
+각 템플릿의 **상세한 설명과 옵션 정보**는 `src/<template-name>/README.md` 파일을 참조하세요.
+
+- **ubuntu**: 기본 Ubuntu 환경에 유용한 도구들이 미리 설치된 템플릿 (추천)
+- **hello**: Hello World 예제 템플릿
+- **color**: 사용자 지정 색상 옵션이 있는 예제 템플릿
+
+### 템플릿 적용 (Apply)
+
+`devcontainer` CLI를 사용하여 게시된 템플릿을 프로젝트에 적용할 수 있습니다.
+
+**템플릿 적용 예시 (Ubuntu):**
+
+```bash
+devcontainer templates apply \
+    -t ghcr.io/Hyper-Accel/devcon-templates/ubuntu:latest \
+    --workspace-folder .
 ```
 
-### Options
+**옵션 지정:**
 
-All available options for a Template should be declared in the `devcontainer-template.json`. The syntax for the `options` property can be found in the [devcontainer Template json properties reference](https://containers.dev/implementors/templates#devcontainer-templatejson-properties).
+각 템플릿은 고유한 옵션을 가질 수 있습니다. 예를 들어 `ubuntu` 템플릿의 OS 버전을 지정하려면 다음과 같이 실행합니다.
 
-For example, the `color` Template provides three possible options (`red`, `gold`, `green`), where the default value is set to "red".
-
-```jsonc
-{
-    // ...
-    "options": {
-        "favorite": {
-            "type": "string",
-            "description": "Choose your favorite color."
-            "proposals": [
-                "red",
-                "gold",
-                "green"
-            ],
-            "default": "red"
-        }
-    }
-}
+```bash
+devcontainer templates apply \
+    -t ghcr.io/Hyper-Accel/devcon-templates/ubuntu:latest \
+    -a '{"imageVariant": "noble"}' \
+    --workspace-folder .
 ```
 
-An [implementing tool](https://containers.dev/supporting#tools) will use the `options` property from [the documented Dev Container Template properties](https://containers.dev/implementors/templates#devcontainer-templatejson-properties) for customizing the Template. See [option resolution example](https://containers.dev/implementors/templates#option-resolution-example) for details.
+사용 가능한 전체 옵션 목록과 설명은 해당 템플릿의 `README.md` (`src/<template-name>/README.md`)를 확인하시기 바랍니다.
 
-## Distributing Templates
+## Testing Templates
 
-**Note**: *Allow GitHub Actions to create and approve pull requests* should be enabled in the repository's `Settings > Actions > General > Workflow permissions` for auto generation of `src/<template>/README.md` per Template (which merges any existing `src/<template>/NOTES.md`).
+이 항목은 템플릿 개발자를 위한 내용입니다.
 
-### Versioning
+### Running Tests
 
-Templates are individually versioned by the `version` attribute in a Template's `devcontainer-template.json`. Templates are versioned according to the semver specification. More details can be found in [the Dev Container Template specification](https://containers.dev/implementors/templates-distribution/#versioning).
+로컬에서 템플릿을 수정하고 테스트하려면 repo에 포함된 스크립트를 사용합니다.
 
-### Publishing
+```bash
+# 1. 템플릿 빌드 (Docker 이미지 빌드)
+./.github/actions/smoke-test/build.sh ubuntu
 
-> NOTE: The Distribution spec can be [found here](https://containers.dev/implementors/templates-distribution/).  
->
-> While any registry [implementing the OCI Distribution spec](https://github.com/opencontainers/distribution-spec) can be used, this template will leverage GHCR (GitHub Container Registry) as the backing registry.
-
-Templates are source files packaged together that encode configuration for a complete development environment.
-
-This repo contains a GitHub Action [workflow](.github/workflows/release.yaml) that will publish each template to GHCR.  By default, each Template will be prefixed with the `<owner/<repo>` namespace.  For example, the two Templates in this repository can be referenced by an [implementing tool](https://containers.dev/supporting#tools) with:
-
-```
-ghcr.io/devcontainers/template-starter/color:latest
-ghcr.io/devcontainers/template-starter/hello:latest
+# 2. 테스트 실행
+./.github/actions/smoke-test/test.sh ubuntu
 ```
 
-The provided GitHub Action will also publish a third "metadata" package with just the namespace, eg: `ghcr.io/devcontainers/template-starter`. This contains information useful for tools aiding in Template discovery.
-
-'`devcontainers/template-starter`' is known as the template collection namespace.
-
-### Marking Template Public
-
-For your Template to be used, it currently needs to be available publicly. By default, OCI Artifacts in GHCR are marked as `private`. 
-
-To make them public, navigate to the Template's "package settings" page in GHCR, and set the visibility to 'public`. 
-
-```
-https://github.com/users/<owner>/packages/container/<repo>%2F<templateName>/settings
-```
-
-### Adding Templates to the Index
-
-Next you will need to add your Templates collection to our [public index](https://containers.dev/templates) so that other community members can find them. Just follow these steps once per collection you create:
-
-* Go to [github.com/devcontainers/devcontainers.github.io](https://github.com/devcontainers/devcontainers.github.io)
-     * This is the GitHub repo backing the [containers.dev](https://containers.dev/) spec site
-* Open a PR to modify the [collection-index.yml](https://github.com/devcontainers/devcontainers.github.io/blob/gh-pages/_data/collection-index.yml) file
-
-This index is from where [supporting tools](https://containers.dev/supporting) like [VS Code Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) and [GitHub Codespaces](https://github.com/templates/codespaces) surface Templates for their Dev Container Creation Configuration UI.
-
-### Testing Templates
-
-This repo contains a GitHub Action [workflow](.github/workflows/test-pr.yaml) for testing the Templates. Similar to the [`devcontainers/templates`](https://github.com/devcontainers/templates) repo, this repository has a `test` folder.  Each Template has its own sub-folder, containing at least a `test.sh`.
-
-For running the tests locally, you would need to execute the following commands -
-
-```
-    ./.github/actions/smoke-test/build.sh ${TEMPLATE-ID} 
-    ./.github/actions/smoke-test/test.sh ${TEMPLATE-ID} 
-```
-
-### Updating Documentation
-
-This repo contains a GitHub Action [workflow](.github/workflows/release.yaml) that will automatically generate documentation (ie. `README.md`) for each Template. This file will be auto-generated from the `devcontainer-template.json` and `NOTES.md`.
+각 템플릿의 테스트 코드는 `test/<template-id>/test.sh`에 위치합니다.
+테스트는 `devcontainer up`을 통해 컨테이너를 실행하고, 정의된 검증 스크립트를 수행하는 방식으로 동작합니다.

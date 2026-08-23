@@ -11,9 +11,7 @@
 
 각 템플릿의 **상세한 설명과 옵션 정보**는 `src/<template-name>/README.md` 파일을 참조하세요.
 
-- **ubuntu**: 기본 Ubuntu 환경에 유용한 도구들이 미리 설치된 템플릿 (추천)
-- **hello**: Hello World 예제 템플릿
-- **color**: 사용자 지정 색상 옵션이 있는 예제 템플릿
+- **ubuntu**: 기본 Ubuntu 환경에 유용한 도구들이 미리 설치된 템플릿
 
 ### 템플릿 적용 (Apply)
 

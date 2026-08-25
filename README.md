@@ -1,7 +1,7 @@
 # Dev Container Templates
 
 이 repo는 [https://github.com/devcontainers/template-starter](https://github.com/devcontainers/template-starter)로부터 출발했습니다.
-다양한 커스텀 Dev Container 템플릿들을 추가하여 관리하고 있습니다. (예: `ubuntu`)
+커스텀 Dev Container 템플릿들을 추가하여 관리하고 있습니다. (예: `ubuntu`)
 
 ## Template 사용 방법
 
@@ -21,7 +21,7 @@
 
 ```bash
 devcontainer templates apply \
-    -t ghcr.io/Hyper-Accel/devcon-templates/ubuntu:latest \
+    -t ghcr.io/congealer/devcontainers/ubuntu:latest \
     --workspace-folder .
 ```
 
@@ -31,7 +31,7 @@ devcontainer templates apply \
 
 ```bash
 devcontainer templates apply \
-    -t ghcr.io/Hyper-Accel/devcon-templates/ubuntu:latest \
+    -t ghcr.io/congealer/devcontainers/ubuntu:latest \
     -a '{"imageVariant": "noble"}' \
     --workspace-folder .
 ```

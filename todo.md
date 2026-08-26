@@ -28,22 +28,21 @@
 
 - [x] **hello/color 제거**
       템플릿 둘과 테스트 삭제, 루트 README 목록 정리, `.gitignore` 추가, `devcontainer-lock.json` 커밋
-- [ ] **tidy 마무리** (§1) ← **지금 여기.** 아래 12 건
+- [x] **tidy 마무리** (§1) — 아래 8 건
       - [x] 자잘한 것 — 네임스페이스 6 곳, `documentationURL` 경로, 매달린 `---`, 루트 README 문구
       - [x] LICENSE 저작권 줄 + `licenseURL` (§1-1)
-      - [ ] `release.yaml` 교체 (§1-1)
+      - [x] `release.yaml` 교체 (§1-1)
       - [x] 하네스 — `build.sh` 가 옵션 값을 컨테이너로 전달 (§1-2)
       - [x] 하네스 — `build.sh` 가 옵션 값을 밖에서 받음 (`TEMPLATE_ARGS`) (§1-2)
       - [x] 하네스 — `test.sh` 에 `trap` + `KEEP` (§1-2)
       - [x] `test/ubuntu/test.sh` 의 `distro` 체크 재작성 (§1-2)
-      - [x] `dev.md` — 하네스 개발 가이드 (§4-4). **CI 절은 §1-3 이후의 형상을 적어뒀다**
-      - [ ] CI — 매트릭스를 `ls src` 에서 (§1-3)
-      - [ ] CI — `continue-on-error` 제거 (§1-3)
-      - [ ] CI — `ci:` 집계 job (§1-3)
-      - [ ] CI — 위생: checkout v4, `concurrency`, 중복 checkout 제거 (§1-3)
-- [ ] **rohd 이식** (§2) — 새 브랜치. **당장 쓸 것은 이쪽**
-- [ ] **ubuntu 재설계** (§3) — 새 브랜치. 급하지 않음
-- [ ] 개발 워크플로 (§4), 남은 CI (§5)
+      - [x] `dev.md` — 하네스 개발 가이드 (§4-4). **CI 절은 §5 이후의 형상을 적어뒀다**
+
+      로컬에서 실제로 돌려 확인했다 — `build.sh` → `test.sh` 3/3 통과(exit 0),
+      옵션을 어긋나게 하면 `distro` 가 RED(exit 1), 정리까지 동작.
+
+- [ ] **rohd 이식 + Makefile** (§2 → §4) ← **다음.** 한 브랜치에서. **당장 쓸 것은 rohd**
+- [ ] **ubuntu 재설계 + CI 정비** (§3, §5) — 그 다음
 
 ---
 
@@ -57,9 +56,9 @@ rohd 의 `version`(§2-1), Makefile 의 테스트 타깃 설계(§4-1),
 
 ---
 
-## 1. tidy 마무리 — **지금 하는 것**
+## 1. tidy — **완료**
 
-여기까지 하고 `tidy` 를 닫는다. 목표는 **rohd 를 얹기 좋은 바닥을 만드는 것**이다.
+목표는 **rohd 를 얹기 좋은 바닥을 만드는 것**이었다. 아래는 무엇을 왜 했는지의 기록이다.
 
 > **완료 여부는 위 「진행 상황」에서만 관리한다.** 여기는 무엇을 왜 하는지만 적는다.
 > 체크박스를 두 군데 두면 어긋난다 — 실제로 한 번 어긋났다.
@@ -208,46 +207,9 @@ check "distro" [ ! $(lsb_release -c | grep nobel) ]
 > 통째로 바뀐다 (`~/.zshrc` 가 심볼릭 링크가 되어 지금의 grep 검사는 대상 파일 자체가 없어진다).
 > 교체될 템플릿에 테스트를 붙이는 건 순서가 거꾸로다. §3 에서 목표 동작을 향해 쓴다.
 
-### 1-3. CI
-
-#### 매트릭스를 리포에서 읽는다
-
-devcon-features 의 `test.yaml` 방식:
-
-```bash
-all=$(ls src | jq -R . | jq -sc .)
-```
-
-주석에 이유가 적혀 있다 — "feature 를 추가해도 테스트가 빠질 수 없게".
-지금은 정확히 반대다: paths-filter 에 손으로 적은 `color`, `hello` 만 있어서
-**ubuntu 는 CI 에서 한 번도 돌아본 적이 없고**, rohd 를 넣으면 또 빠뜨릴 자리다.
-
-**덤으로 죽은 필터 문제가 통째로 사라진다** — paths-filter 자체가 없어지므로.
-(지금 그 두 필터는 매칭될 파일이 없어 매트릭스가 비고 job 이 스킵된다. 깨지진 않지만
-어떤 템플릿도 테스트되지 않는다)
-
-#### `continue-on-error: true` 를 뗀다
-
-[test-pr.yaml:21](.github/workflows/test-pr.yaml#L21).
-**테스트가 실패해도 PR 체크가 초록으로 뜬다.** 위 필터 문제와 겹쳐서, `distro` 체크가
-공허하게 통과한다는 걸 CI 가 잡을 수 없었던 이유이기도 하다.
-devcon-features 에는 이 플래그가 없다.
-
-#### `ci:` 집계 job
-
-매트릭스가 늘어도 이름이 안 바뀌는 체크 하나 — branch ruleset 이 하나만 걸면 되게.
-devcon-features `test.yaml` 의 마지막 job.
-
-#### 위생
-
-`actions/checkout@v3` → `v4` (3 곳: [test-pr.yaml:26](.github/workflows/test-pr.yaml#L26),
-release.yaml, [smoke-test/action.yaml:12](.github/actions/smoke-test/action.yaml#L12)),
-`concurrency` 그룹 추가, 중복 checkout 정리
-([test-pr.yaml:26](.github/workflows/test-pr.yaml#L26) 에서 이미 했는데
-[smoke-test/action.yaml:10-12](.github/actions/smoke-test/action.yaml#L10-L12) 이 또 한다).
-
-**Makefile 은 여기서 안 한다** (§4). 로컬 편의와 `prepare`/`release` 용이라 위 목적과 무관하고,
-넣으면 tidy 가 부풀어 오른다. 나중에 CI 의 `run:` 두 줄만 바꾸면 된다.
+> **CI 는 tidy 에서 하지 않는다** (§5). CI 가 make 타깃을 부르는 형태로 갈 것이므로,
+> Makefile(§4) 보다 먼저 손대면 `run:` 줄을 두 번 쓰게 된다. 그때까지 검증은 위의 로컬
+> 실행으로 한다.
 
 ---
 
@@ -578,7 +540,7 @@ _Note: This file was auto-generated from the [devcontainer-template.json](https:
 - [ ] **`make` 타깃 표와 `clean`/`distclean` 이 지우는 것** — §4-1 이후.
 - [ ] **문서 생성 규칙** — README 는 자동 생성물이니 `NOTES.md` 를 고치라는 안내 (§4-3).
 - [ ] **릴리스 절차와 주의점** — §4-2 의 체크리스트.
-- [ ] **CI 절 갱신** — §1-3 이 끝나면 실제 형상과 맞는지 대조. 지금은 목표 형상을 적어뒀다.
+- [ ] **CI 절 갱신** — §5 가 끝나면 실제 형상과 맞는지 대조. 지금은 목표 형상을 적어뒀다.
 - [ ] **루트 README 의 "Testing Templates" 절을 dev.md 로 넘긴다** — 지금 로컬 실행법이
       양쪽에 중복돼 있다.
 
@@ -601,21 +563,62 @@ _Note: This file was auto-generated from the [devcontainer-template.json](https:
 
 ---
 
-## 5. 남은 CI
+## 5. CI 정비 — **Makefile(§4) 이후**
 
-§1-3 으로 안 올라간 것들.
+**한 번에 make 를 부르는 형태로 만든다.** 스크립트를 직접 부르는 중간 단계를 거치지
+않는다 — 그러면 `run:` 줄을 두 번 쓰게 된다.
 
-- [ ] **CI 가 make 를 호출하게** (§4-1 이후). `run: make test-${{ matrix.templates }}` 형태로.
+그때까지 CI 는 죽어 있다. paths-filter 에 `color`, `hello` 만 적혀 있는데 둘 다 없으니
+매트릭스가 비고 job 이 스킵된다. **어떤 템플릿도 테스트되지 않는다.** 게다가
+`continue-on-error: true` 라 실패해도 초록으로 뜬다. 그 사이 검증은 로컬에서 한다
+([dev.md](dev.md) 참고).
+
+### 5-1. 테스트 워크플로
+
+- [ ] **매트릭스를 리포에서 읽는다.** devcon-features 의 `test.yaml` 방식:
+
+      ```bash
+      all=$(ls src | jq -R . | jq -sc .)
+      ```
+
+      주석에 이유가 적혀 있다 — "feature 를 추가해도 테스트가 빠질 수 없게".
+      지금은 정확히 반대라 손으로 적은 목록을 쓴다. 이 방식이면 **죽은 필터 문제가
+      통째로 사라진다** — paths-filter 자체가 없어지므로.
+
+- [ ] **`continue-on-error: true` 를 뗀다.**
+      [test-pr.yaml:21](.github/workflows/test-pr.yaml#L21).
+      **테스트가 실패해도 PR 체크가 초록으로 뜬다.** 위 필터 문제와 겹쳐서, `distro` 체크가
+      공허하게 통과한다는 걸 CI 가 잡을 수 없었던 이유이기도 하다.
+
+- [ ] **`run:` 을 make 타깃으로.** `run: make test-${{ matrix.template }}` 형태.
       로컬과 CI 가 같은 경로를 탄다.
-- [ ] **`smoke-test` composite action 의 거취.** Makefile 이 로직을 흡수하면 사라진다.
+
+- [ ] **`smoke-test` composite action 의 거취.** Makefile 이 `build.sh`/`test.sh` 로직을
+      흡수하면 이 action 은 사라진다. 감싸기만 하면 남는다 (§4-1 결정에 따라).
+
+- [ ] **`ci:` 집계 job.** 매트릭스가 늘어도 이름이 안 바뀌는 체크 하나 —
+      branch ruleset 이 하나만 걸면 되게. devcon-features `test.yaml` 의 마지막 job.
+
+- [ ] **위생.** `actions/checkout@v3` → `v4`
+      ([test-pr.yaml:26](.github/workflows/test-pr.yaml#L26),
+      [smoke-test/action.yaml:12](.github/actions/smoke-test/action.yaml#L12)),
+      `concurrency` 그룹 추가, 중복 checkout 정리
+      (test-pr.yaml 에서 이미 했는데 composite action 이 또 한다).
+
+- [ ] **`push: branches: [main]` 트리거를 넣을지.** 지금은 `pull_request` 뿐이라 main 에
+      직접 푸시하면 아무것도 안 돈다. devcon-features 는 push/PR/dispatch 셋 다.
+
+### 5-2. 그 밖
+
 - [ ] **`validate` 워크플로.** devcon-features 의 `validate.yml` 이
       `devcontainers/action@v1` 의 `validate-only: "true"` 로 메타데이터를 검증한다.
 - [ ] **버전 범프 검사.** PR 에서 "바뀐 템플릿의 `version` 이 올랐는가". `make prepare` 를
       빠뜨렸을 때 조용히 no-op 되는 걸 막는다.
-- [ ] **`push: branches: [main]` 트리거를 넣을지.** 지금은 `pull_request` 뿐이라 main 에
-      직접 푸시하면 아무것도 안 돈다. devcon-features 는 push/PR/dispatch 셋 다.
-- [ ] **문서 PR 스텝.** §4-3 을 하기로 하면 `generate-docs` 뒤에
+- [ ] **문서 PR 스텝.** §4-3 을 하면 `generate-docs` 를 켜고, 뒤에
       `automated-documentation-update-*` PR 을 여는 스텝을 붙인다 (devcon-features 방식).
+      `release.yaml` 의 `generate-docs: "false"` 도 그때 켠다.
+- [ ] **[dev.md](dev.md) 의 CI 절 대조.** 지금 목표 형상을 적어둔 상태다. 실제와 맞는지
+      확인하고, 범위 밖으로 뺀 `release.yaml` 과 `action.yaml` 파일명을 넣을지 정한다.
 
 ---
 
@@ -658,21 +661,25 @@ _Note: This file was auto-generated from the [devcontainer-template.json](https:
 `src/rohd/`, `test/rohd/` 는 전부 신규 파일이고 ubuntu 쪽과 겹치는 파일이 하나도 없다.
 **rohd 를 먼저 해도 된다** — 당장 쓸 것도 그쪽이다.
 
-### tidy(§1) 가 rohd 앞에 오면 이득인 것
+### tidy(§1) 가 rohd 앞에 온 이유 — 끝났다
 
 | | 왜 |
 |---|---|
 | **§1-2 하네스 옵션 전달** | rohd 테스트가 `projectName` 을 알아야 한다. 없으면 `pubspec.yaml` 과 import 검증을 못 한다 |
 | **§1-2 밖에서 옵션 지정** | HANDOFF 가 요구하는 "이름 두 개(`my_design`/`zzz_top`)로 시험" 이 불가능하다 |
-| **§1-2 `trap` + `KEEP`** | 새 템플릿을 붙일 땐 실패를 여러 번 겪는다. 지금은 실패마다 컨테이너가 샌다 |
-| **§1-3 매트릭스를 `ls src` 에서** | 안 하면 rohd 를 넣어도 CI 가 안 돈다 (paths-filter 에 없으므로) |
-| **§1-3 `continue-on-error` 제거** | 안 하면 rohd 실패가 초록으로 보인다 |
+| **§1-2 `trap` + `KEEP`** | 새 템플릿을 붙일 땐 실패를 여러 번 겪는다. 그전에는 실패마다 컨테이너가 샜다 |
 
-### rohd 보다 앞서면 이득인 것 둘 (tidy 밖)
+### rohd 는 CI 없이 들어온다
+
+CI 정비(§5)가 Makefile(§4) 뒤로 갔으므로, **rohd 를 붙이고 검증하는 내내 CI 는 죽어 있다.**
+검증은 로컬 루프로 한다 — `build.sh` → `KEEP=1 test.sh` → 고쳐서 재실행. 실제로 이 루프가
+도는 것은 tidy 에서 확인했다.
+
+### rohd 보다 앞서면 이득인 것 (tidy 밖)
 
 | | 왜 |
 |---|---|
-| **§0 문서 체계 + §4-3** | `generate-docs` 가 `README.md` 를 덮어쓴다. rohd 를 손으로 쓴 README 째로 넣으면 나중에 NOTES.md 로 다시 쪼개야 한다. 처음부터 그 형태면 **재작업 0** |
+| **§4-3 문서 체계** | `generate-docs` 가 `README.md` 를 덮어쓴다. rohd 를 손으로 쓴 README 째로 넣으면 나중에 NOTES.md 로 다시 쪼개야 한다. 처음부터 그 형태면 **재작업 0** — 그래서 rohd 만은 이식할 때부터 NOTES.md 형태로 넣기로 했다 |
 | **§4-5 Node 20** | 현재 v18.20.8, CLI 요구는 20+. rohd 스모크 테스트는 Dart SDK 를 받고 컨테이너를 띄우는 무거운 작업이라 헛시간 쓰기 쉽다 |
 
 ### rohd 발행에만 걸리는 것

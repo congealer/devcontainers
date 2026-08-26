@@ -1,41 +1,32 @@
-name: "Release Dev Container Templates"
+name: "Release dev container templates"
+
+# Publishing is normally done locally -- `devcontainer templates publish`, later
+# `make release` -- so this never fires on its own. It is the fallback for when
+# a release has to go out from somewhere without credentials to hand.
+#
+# There is no tag trigger on purpose: a version belongs to a template, not to
+# the repository. One repo tag cannot express "ubuntu 1.2.0 and rohd 0.3.1".
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*'
 
 jobs:
   deploy:
-    if: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') }}
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       packages: write
-      contents: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Login to GHCR
-        uses: docker/login-action@v3
+      - name: "Publish Templates"
+        uses: devcontainers/action@v1
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/Hyper-Accel/devcon-templates
-          tags: |
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          publish-templates: "true"
+          base-path-to-templates: "./src"
+          # README.md under src/<id> is hand-written for now. Turning this on
+          # would regenerate it from devcontainer-template.json and drop
+          # everything written by hand.
+          generate-docs: "false"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

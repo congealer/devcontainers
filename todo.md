@@ -261,40 +261,46 @@ check "distro" [ ! $(lsb_release -c | grep nobel) ]
       안 쓸 사람은 feature 를 지우면 되는데, **fzf 배선이 prezto 의 `extraZshrc` 에 얹혀 있어서**
       같이 옮겨야 한다. `docs/rohd.md` 에 그 절차를 적을 것.
 
-### 2-3. `test/rohd/test.sh` 를 만든다
+### 2-3. `test/rohd/test.sh`
 
 HANDOFF.md 가 "CI 하네스를 전제로 하는데 아직 리포도 워크플로도 없다" 며 일부러 안 만들었다고
-적어뒀다. 이제 생겼으니 만든다. **§1-2 의 옵션 전달이 전제다** — `projectName` 을 알아야 한다.
+적어뒀다. 이제 생겼으니 만들었다. **§1-2 의 옵션 전달이 전제였다** — `projectName` 을 알아야
+`pubspec.yaml` 과 import 를 검증할 수 있다.
 
-- [ ] `dart analyze` — 무경고
-- [ ] `dart test` — 8 개 통과 (예제 설계)
-- [ ] `cd packages/rohd_patches && dart test` — 38 개 통과
-- [ ] `find . -name package_config.json -not -path './build/*'` — **1 개만**
-      (루트에만. 서브패키지에도 생기면 워크스페이스 배선이 깨진 것)
-- [ ] `dart run bin/generate_rtl.dart` — `build/counter.sv` 생성
-- [ ] 재실행 후 sha256 **동일** (헤더 타임스탬프 회귀 검출). 해시값 자체는 비교하지 말 것
-- [ ] `grep 'val <= (val + ' build/counter.sv` — 있어야 함 (증가가 `always_ff` 안에 인라인)
-- [ ] `grep carry build/counter.sv` — **없어야 함** (있으면 `.inl` 패치가 안 먹은 것)
-- [ ] `getent passwd $(id -un)` — `/usr/bin/zsh` 로 끝남 (prezto)
-- [ ] `zsh -i -c 'bindkey "^R"'` — `fzf-history-widget`
-- [ ] **`${templateOption:` 이 하나도 안 남아 있을 것**
-- [ ] `pubspec.yaml` 의 `name` 과 import 경로가 전달받은 `projectName` 과 일치
-- [ ] **예제 없이도 서는지** — `rm lib/counter.dart bin/generate_rtl.dart test/counter_test.dart`
-      후에도 `dart pub get && dart analyze` 통과 (`packages/rohd_patches` 는 워크스페이스
-      멤버라 지우면 안 됨)
-- [ ] **`projectName` 두 개로 시험** — `my_design` / `zzz_top`. §1-2 의 "밖에서 옵션 지정" 이 전제.
+- [x] ~~작성~~ — 검사 11 개. **목록과 근거는 [test/rohd/test.md](test/rohd/test.md) 에 있다.**
+      HANDOFF 의 수용 기준을 그대로 옮기지 않았다. 그건 씨앗을 처음 만들 때 "다 됐나" 를
+      보는 체크리스트였고, 매 PR 스모크 테스트와는 목적이 다르다.
+      뺀 것(`dart test` 개수, RTL 해시·grep, 유틸리티 목록)과 이유도 그 문서에 적어뒀다.
+      판단 기준 자체는 [dev.md](dev.md) 의 "무엇을 검사할 것인가" 로 일반화했다.
 
-### 2-4. 에디터 함정 막기
+- [ ] **한 번도 돌려보지 않았다.** `build.sh rohd` 로 확인할 것 셋:
+      - `dart --version` 의 정확한 출력 형식 (`Dart SDK version: 3.12.2` 로 가정)
+      - `package_config.json` 의 `"name": "rohd"` 표기 (공백 유무)
+      - feature 의 `updateContentCommand` 실패도 빌드를 실패시키는가
+        (`devcontainer.json` 직접 선언분으로는 실측했다)
 
-- [ ] **`.vscode/settings.json` 에 `{"dart.analysisExcludedFolders": ["src/rohd"]}`.**
+      앞의 둘은 틀리면 **거짓 실패**가 난다.
 
-      이 리포를 VS Code 로 열면 `src/rohd/pubspec.yaml` 때문에 Dart 확장이 `src/rohd` 를
-      프로젝트로 잡고, `${templateOption:projectName}` 을 Dart 문자열 보간으로 읽어 **에러
-      13 건**을 낸다. 더 나쁜 건 `unnecessary_brace_in_string_interps` 자동 수정을 수락하면
-      placeholder 가 **영구히 망가진다**는 것 — `$templateOption:projectName}`.
-      `dart.updateImportsOnRename`(기본 `true`) 도 같은 위험이 있다.
+- [ ] **`projectName` 두 개로 시험** — `my_design` / `zzz_top`. 하네스를 두 번 돌리는 것이라
+      `test.sh` 안에 못 넣는다. CI 매트릭스(§5)에 넣기 전까지는 수동.
 
-      트레이드오프: 끄면 진짜 문제도 안 보인다. 그래서 2-3 의 테스트가 그 역할을 해야 한다.
+### 2-4. 에디터 함정 — **막지 않기로 했다**
+
+`.vscode/settings.json` 에 `dart.analysisExcludedFolders` 를 넣는 안을 검토했고 **안 넣는다.**
+이 리포에 Dart 확장을 설치할 일이 없어서 관리 부담만 남는다.
+
+**위험 자체는 실재한다** — 기록해 둔다. `src/rohd/pubspec.yaml` 이 있으므로 Dart 확장이
+`src/rohd` 를 프로젝트로 잡으면, import 안의 `${templateOption:projectName}` 을 문자열
+보간으로 읽어 **에러 13 건**을 낸다. 그중 `unnecessary_brace_in_string_interps` 의 자동
+수정을 수락하면 중괄호가 빠져 **placeholder 가 영구히 망가진다** —
+`$templateOption:projectName}`. `dart.updateImportsOnRename`(기본 `true`) 도 같은 위험이다.
+
+성립 조건은 **Dart 확장이 깔린 에디터로 이 리포를 여는 것**이다. 루트 개발 컨테이너는
+`bash-ide-vscode` 와 `vscode-eslint` 만 설치하므로 컨테이너 안에서는 안 걸린다.
+컨테이너 밖에서 열 때만 조심하면 된다.
+
+그리고 §2-3 의 "`${templateOption:` 이 남아 있지 않을 것" 검사가 사후 방어가 된다 —
+망가뜨렸다면 스모크 테스트가 잡는다.
 
 ---
 

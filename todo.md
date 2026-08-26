@@ -220,25 +220,25 @@ check "distro" [ ! $(lsb_release -c | grep nobel) ]
 
 ### 2-1. 옮기기
 
-- [ ] `rohd-dev/rohd-template/src/rohd/` → `src/rohd/`
+- [x] ~~`rohd-dev/rohd-template/src/rohd/` → `src/rohd/`~~ 17 개 파일, `diff -r` 로 원본과
+      동일 확인. `.gitignore` 수정 덕에 `.devcontainer/` 가 빠지지 않았다.
 
-      옵션 정합성은 확인했다 — 선언 3 개(`projectName`, `description`, `dartVersion`)가 전부
+      옵션 정합성도 확인했다 — 선언 3 개(`projectName`, `description`, `dartVersion`)가 전부
       실제로 쓰이고 모두 `default` 가 있어서 `build.sh` 치환이 그대로 돈다.
 
-- [ ] **네임스페이스 치환** — `congealer/rohd-devcontainer-template` → `congealer/devcontainers`:
-      - `src/rohd/devcontainer-template.json` 의 `documentationURL`
-        → `https://github.com/congealer/devcontainers/tree/main/src/rohd`
-      - `src/rohd/README.md` 의 apply 예시 → `ghcr.io/congealer/devcontainers/rohd`
+- [x] ~~**네임스페이스 치환**~~ — `congealer/rohd-devcontainer-template` →
+      `congealer/devcontainers`, 2 곳 (`documentationURL`, README 의 apply 예시).
+      **`licenseURL` 은 필드 자체가 없어서 새로 넣었다** — ubuntu 와 같은 값.
 
-      **건드리지 말 것:** `src/rohd/.devcontainer/devcontainer.json` 의
+      **건드리지 않았다:** `src/rohd/.devcontainer/devcontainer.json` 의
       `ghcr.io/congealer/devcon-features/prezto:1`. 별개의 공개 feature 이고 이미 `congealer`
-      네임스페이스다. GHCR 태그 조회로 공개 확인 완료 (`1`, `1.0`, `1.0.0`, `1.2`, `1.2.1`, `latest`).
+      네임스페이스다.
 
-- [ ] **`lsd` 를 apt 목록에 추가한다.** 도구 목록 결정에 따라 rohd 쪽에서 유일하게 바뀌는 것이다.
+- [x] ~~**`lsd` 를 apt 목록에 추가한다.**~~ 도구 목록 결정에 따라 rohd 쪽에서 바뀐 유일한 것이다.
 
-- [ ] **README 를 NOTES.md 형태로 넣는다.** `generate-docs` 를 쓰기로 정해졌으므로(§4-3),
-      처음부터 이 형태로 넣으면 재작업이 없다 — 나중에 도입하면 손으로 쓴 한국어 README 를
-      다시 쪼개야 한다.
+- [ ] **README 를 NOTES.md 형태로 넣는다.** `generate-docs` 를 쓰기로 정해졌으므로(§4-3)
+      `src/<id>/README.md` 는 자동 생성물이 된다 — 손으로 쓴 내용은 옮기지 않으면 릴리스 때
+      날아간다. **일단 미룬다** (ubuntu 와 함께 §4-3 에서).
 
 - [ ] **`version`.** 지금 `0.0.1`. 컨테이너를 띄운 검증이 안 끝난 상태라 그게 맞지만, 이 리포에
       들어오면 스모크 테스트가 그 검증을 대신한다 → 통과 후 `1.0.0`.

@@ -1,0 +1,55 @@
+# This file configures the static analysis results for your project (errors,
+# warnings, and lints).
+#
+# The baseline is the 'recommended' set from `package:lints`. Everything below
+# it is a deliberate departure, chosen against how ROHD code actually reads --
+# it is a DSL, and some Dart lints fight its idioms while others catch bugs
+# that only a DSL this asynchronous can produce.
+
+include: package:lints/recommended.yaml
+
+linter:
+  rules:
+    # ROHD simulation is asynchronous throughout. A dropped `await` does not
+    # throw -- it shifts the waveform, which surfaces much later as an
+    # unexplained `X` or an off-by-one-cycle result.
+    - discarded_futures
+    - unawaited_futures
+
+    # A swallowed exception in simulation code does not fail loudly -- the test
+    # goes green over broken hardware. `core` already forbids the empty `catch
+    # {}`; this covers the catch-all that does something and hides the rest.
+    # The rule exempts a catch that rethrows, or that hands the error straight
+    # to `Completer.completeError`.
+    - avoid_catches_without_on_clauses
+
+    # Deliberately NOT enabled:
+    #
+    #   directives_ordering
+    #     Sorts `package:` imports alphabetically, and this project's own
+    #     package name is chosen by whoever generated it. Where that name sorts
+    #     against `rohd` and `rohd_patches` is therefore unknowable in advance,
+    #     so the entry point and the testbench would start life with a lint
+    #     against them. Turn it on once the name is fixed, and sort the imports
+    #     once, if you want it.
+    #
+    # ...and these, because the DSL violates them constantly:
+    #
+    #   unnecessary_statements
+    #     `o <= a + 1;` drives a signal, but `<=` is an overloaded operator, so
+    #     the analyzer sees an expression statement whose value is discarded.
+    #     Six hits in this repo. The same `<=` inside a `Sequential([...])`
+    #     list is an element rather than a statement, so it passes -- the rule
+    #     fires on where the operator sits, not on what it does.
+    #
+    #   cascade_invocations
+    #     Wants `Logic(width: 5)..put(3)` wherever a signal is created and then
+    #     driven on the next line. That collapses structural construction and
+    #     simulation stimulus into one expression. It is the most-suppressed
+    #     rule in intel/rohd-hcl (16 occurrences).
+
+# For more information about the core and recommended set of lints, see
+# https://dart.dev/go/core-lints
+
+# For additional information about configuring this file, see
+# https://dart.dev/tools/analysis

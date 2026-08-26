@@ -1,0 +1,32 @@
+{
+    "id": "rohd",
+    "version": "0.0.1",
+    "name": "ROHD (Rapid Open Hardware Development)",
+    "description": "A ROHD hardware design project: a pinned Dart SDK, a transaction-level testbench, reproducible SystemVerilog output, and workarounds for the ROHD gaps you would otherwise hit on day one.",
+    "documentationURL": "https://github.com/congealer/devcontainers/tree/main/src/rohd",
+    "licenseURL": "https://github.com/congealer/devcontainers/blob/main/LICENSE",
+    "options": {
+        "projectName": {
+            "type": "string",
+            "default": "my_design",
+            "description": "Dart package name for this project. Must be lowercase_with_underscores; it becomes the package that `bin/` and `test/` import."
+        },
+        "description": {
+            "type": "string",
+            "default": "A ROHD hardware design.",
+            "description": "One line describing the project, written into pubspec.yaml."
+        },
+        "dartVersion": {
+            "type": "string",
+            "proposals": [
+                "3.12.2",
+                "3.13.1"
+            ],
+            "default": "3.12.2",
+            "description": "Dart SDK version to pin. Must satisfy the `sdk:` constraint in pubspec.yaml."
+        }
+    },
+    "platforms": [
+        "Dart"
+    ]
+}

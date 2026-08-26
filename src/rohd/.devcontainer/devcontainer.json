@@ -1,0 +1,71 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/ubuntu
+{
+	"name": "${templateOption:projectName}",
+	// Ubuntu rather than the `dart:stable` image: leaves room for EDA tooling
+	// later. This image already applies common-utils (the `vscode` user, sudo,
+	// zsh) and git 2.51, so neither needs to be listed as a feature.
+	"image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+
+	// Features to add to the dev container. More info: https://containers.dev/features.
+	"features": {
+		// Replaces the base image's oh-my-zsh setup: prezto backs up ~/.zshrc and
+		// symlinks its own runcoms in its place, then makes zsh the login shell.
+		//
+		// fzf's zsh integration goes here rather than in a postCreateCommand
+		// because ~/.zshrc is a symlink into prezto's runcoms, and the feature is
+		// what owns that file. The `$+commands[fzf]` guard is evaluated when the
+		// shell starts, so this line survives dropping the fzf feature below.
+		"ghcr.io/congealer/devcon-features/prezto:1": {
+			"extraZshrc": "(( $+commands[fzf] )) && source <(fzf --zsh)"
+		},
+		"ghcr.io/devcontainers/features/github-cli:1": {},
+		// Not apt's fzf: Ubuntu 24.04 ships 0.44, which predates `fzf --zsh` and
+		// carries no key-bindings.zsh (bash and fish only).
+		"ghcr.io/devcontainers-extra/features/fzf:1": {},
+		"ghcr.io/devcontainers-extra/features/apt-packages:1": {
+			"packages": [
+				"bat", // batcat
+				"lsd",
+				"fd-find", // fdfind
+				"ripgrep",
+				"tig",
+				"tldr",
+				"xxd",
+				"file"
+			]
+		},
+
+		// Everything Dart-shaped lives in the local feature -- SDK, PATH and
+		// `pub get`. That boundary is what makes it liftable to
+		// ghcr.io/congealer/devcon-features/dart later without edits. ROHD
+		// itself needs no system packages; it arrives via pubspec.yaml.
+		"./features/dart": {
+			"version": "${templateOption:dartVersion}"
+		}
+
+		// Icarus Verilog. Only needed for ROHD's `SimCompare.iverilogVector`,
+		// which cross-checks generated SystemVerilog against a real Verilog
+		// simulator. Unused today, so it is off:
+		// "packages" above would gain "iverilog".
+	},
+
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"lramseyer.vaporview", // views build/waves/*.vcd
+				"mshr-h.veriloghdl" // syntax for generated build/*.sv
+			]
+		}
+	},
+
+	// AI agent tooling is deliberately absent -- it is per-developer preference,
+	// not a project dependency. Put it in your own VS Code settings instead:
+	//
+	//   "dev.containers.defaultFeatures": {
+	//     "ghcr.io/anthropics/devcontainer-features/claude-code:1": {},
+	//     "ghcr.io/fjktkm/devcontainer-features/agent-persistence:1": { "scope": "user" }
+	//   }
+
+	"remoteUser": "vscode"
+}

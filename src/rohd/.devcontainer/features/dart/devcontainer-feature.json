@@ -1,0 +1,31 @@
+{
+	"name": "dart",
+	"id": "dart",
+	"version": "1.0.0",
+	"description": "Install the Dart SDK and keep the workspace's pub dependencies resolved.",
+	"options": {
+		"version": {
+			"type": "string",
+			"default": "3.12.2",
+			"description": "Version of the Dart SDK to install, or 'latest'."
+		}
+	},
+
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"Dart-Code.dart-code"
+			],
+			"settings": {
+				"dart.sdkPath": "/opt/dart",
+				"dart.checkForSdkUpdates": false
+			}
+		}
+	},
+
+	"updateContentCommand": "dart pub get",
+
+	"installsAfter": [
+		"ghcr.io/devcontainers/features/common-utils"
+	]
+}

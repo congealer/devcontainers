@@ -28,14 +28,15 @@
 
 - [x] **hello/color 제거**
       템플릿 둘과 테스트 삭제, 루트 README 목록 정리, `.gitignore` 추가, `devcontainer-lock.json` 커밋
-- [ ] **tidy 마무리** (§1) ← **지금 여기.** 아래 11 건
+- [ ] **tidy 마무리** (§1) ← **지금 여기.** 아래 12 건
       - [x] 자잘한 것 — 네임스페이스 6 곳, `documentationURL` 경로, 매달린 `---`, 루트 README 문구
       - [x] LICENSE 저작권 줄 + `licenseURL` (§1-1)
       - [ ] `release.yaml` 교체 (§1-1)
       - [x] 하네스 — `build.sh` 가 옵션 값을 컨테이너로 전달 (§1-2)
       - [x] 하네스 — `build.sh` 가 옵션 값을 밖에서 받음 (`TEMPLATE_ARGS`) (§1-2)
-      - [ ] 하네스 — `test.sh` 에 `trap` + `KEEP` (§1-2)
-      - [ ] `test/ubuntu/test.sh` 의 `distro` 체크 재작성 (§1-2)
+      - [x] 하네스 — `test.sh` 에 `trap` + `KEEP` (§1-2)
+      - [x] `test/ubuntu/test.sh` 의 `distro` 체크 재작성 (§1-2)
+      - [x] `dev.md` — 하네스 개발 가이드 (§4-4). **CI 절은 §1-3 이후의 형상을 적어뒀다**
       - [ ] CI — 매트릭스를 `ls src` 에서 (§1-3)
       - [ ] CI — `continue-on-error` 제거 (§1-3)
       - [ ] CI — `ci:` 집계 job (§1-3)
@@ -568,11 +569,18 @@ _Note: This file was auto-generated from the [devcontainer-template.json](https:
 - [ ] **옵션 표를 손으로 쓰지 않는다.** `#{OptionsTable}` 이 만든다. 지금
       [src/ubuntu/README.md](src/ubuntu/README.md#L7-L11) 에 손으로 쓴 표가 있는데 드리프트 원인이다.
 
-### 4-4. `CONTRIBUTING.md`
+### 4-4. `dev.md`
 
-- [ ] **개발자용 문서를 루트 README 에서 분리한다.** devcon-features 처럼
-      README(사용) / CONTRIBUTING(개발) 로. 담을 것: make 타깃 표, 수동 실행법,
-      `clean`/`distclean` 이 지우는 것, 문서 생성 규칙, 릴리스 절차와 주의점.
+개발자용 문서는 루트 [dev.md](dev.md) 로 분리했다 (devcon-features 의 `CONTRIBUTING.md`
+자리). 지금은 **테스트 하네스** 절 하나뿐이다 — 콜 체인, `KEEP`/`trap`, 템플릿 `test.sh`
+작성법, CI.
+
+- [ ] **`make` 타깃 표와 `clean`/`distclean` 이 지우는 것** — §4-1 이후.
+- [ ] **문서 생성 규칙** — README 는 자동 생성물이니 `NOTES.md` 를 고치라는 안내 (§4-3).
+- [ ] **릴리스 절차와 주의점** — §4-2 의 체크리스트.
+- [ ] **CI 절 갱신** — §1-3 이 끝나면 실제 형상과 맞는지 대조. 지금은 목표 형상을 적어뒀다.
+- [ ] **루트 README 의 "Testing Templates" 절을 dev.md 로 넘긴다** — 지금 로컬 실행법이
+      양쪽에 중복돼 있다.
 
 ### 4-5. 개발 컨테이너
 
@@ -632,7 +640,7 @@ _Note: This file was auto-generated from the [devcontainer-template.json](https:
       .env  .DS_Store  .dart_tool/x                     IGNORED   ← 원래 목적은 유지
       ```
 
-- [ ] **루트 README 갱신** — `rohd` 를 템플릿 목록에 추가, 개발자용 내용은 CONTRIBUTING.md 로
+- [ ] **루트 README 갱신** — `rohd` 를 템플릿 목록에 추가, 개발자용 내용은 [dev.md](dev.md) 로
       이관(§4-4).
 
 - [ ] **리포 토픽에 `devcontainer-templates` 추가.** 없으면 containers.dev 색인에 안 잡히고

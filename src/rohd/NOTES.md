@@ -1,11 +1,3 @@
-# ROHD
-
-[ROHD](https://github.com/intel/rohd) 하드웨어 설계 프로젝트를 위한 dev container
-Template 입니다. 적용하면 바로 합성과 시뮬레이션이 도는 프로젝트가 만들어집니다.
-
-> 이 파일은 Template 자체를 설명합니다. 적용할 때 결과 프로젝트로 복사되지 않습니다.
-> 만들어진 프로젝트를 쓰는 방법은 `docs/rohd.md` 에 있습니다.
-
 ## 담고 있는 것
 
 | | |
@@ -17,13 +9,9 @@ Template 입니다. 적용하면 바로 합성과 시뮬레이션이 도는 프�
 | **ROHD 에 맞춘 lint** | DSL 이 상시 위반하는 규칙은 끄고, 비동기 버그를 잡는 규칙은 켬 |
 | **에디터 연동** | 파형(`.vcd`)과 SystemVerilog 확장이 함께 설치됨 |
 
-## 옵션
-
-| 옵션 | 기본값 | 설명 |
-|---|---|---|
-| `projectName` | `my_design` | Dart 패키지 이름. `lowercase_with_underscores` 여야 합니다 |
-| `description` | `A ROHD hardware design.` | `pubspec.yaml` 에 들어갈 한 줄 설명 |
-| `dartVersion` | `3.12.2` | 고정할 Dart SDK 버전 |
+`dartVersion` 은 `3.13.2`(기본값)와 `3.12.2` 중에 고를 수 있습니다. 둘 다 스모크 테스트를
+통과합니다. 목록에 없는 버전을 넣어도 되지만 `pubspec.yaml` 의 `sdk: ^3.12.2` 를 만족해야
+합니다.
 
 예제 설계는 **항상 포함**됩니다. `optionalPaths` 로 선택하게 만들면 VS Code 와 CLI 의
 결과가 갈라지기 때문입니다 — 필요 없으면 지우세요:
@@ -42,7 +30,10 @@ rm lib/counter.dart bin/generate_rtl.dart test/counter_test.dart
 devcontainer templates apply \
   --workspace-folder . \
   --template-id ghcr.io/congealer/devcontainers/rohd \
-  --template-args '{"projectName":"my_design","dartVersion":"3.12.2"}'
+  --template-args '{"projectName":"my_design","dartVersion":"3.13.2"}'
 ```
 
 VS Code 에서는 명령 팔레트의 **Dev Containers: New Dev Container...** 로도 됩니다.
+
+만들어진 프로젝트를 쓰는 방법은 `docs/rohd.md` 에 있습니다 — 이 파일과 `README.md` 는
+적용할 때 결과 프로젝트로 복사되지 않습니다.

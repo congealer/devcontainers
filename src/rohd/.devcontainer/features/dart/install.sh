@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION=${VERSION:-"3.12.2"}
+VERSION=${VERSION:-"3.13.2"}
 
 ARCH=$(uname -m)
 case "$ARCH" in

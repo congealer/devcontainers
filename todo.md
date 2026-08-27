@@ -236,30 +236,40 @@ check "distro" [ ! $(lsb_release -c | grep nobel) ]
 
 - [x] ~~**`lsd` 를 apt 목록에 추가한다.**~~ 도구 목록 결정에 따라 rohd 쪽에서 바뀐 유일한 것이다.
 
-- [ ] **README 를 NOTES.md 형태로 넣는다.** `generate-docs` 를 쓰기로 정해졌으므로(§4-3)
-      `src/<id>/README.md` 는 자동 생성물이 된다 — 손으로 쓴 내용은 옮기지 않으면 릴리스 때
-      날아간다. **일단 미룬다** (ubuntu 와 함께 §4-3 에서).
+- [x] ~~**README 를 NOTES.md 로.**~~ `generate-docs` 가 만들 부분 — 제목, 설명 한 줄,
+      옵션 표 — 은 **지웠고** 나머지만 `NOTES.md` 로 옮겼다.
+      `dartVersion` 의 `proposals` 는 생성 표에 안 나오므로 NOTES 에 문장으로 적었다.
 
-- [ ] **`version`.** 지금 `0.0.1`. 컨테이너를 띄운 검증이 안 끝난 상태라 그게 맞지만, 이 리포에
-      들어오면 스모크 테스트가 그 검증을 대신한다 → 통과 후 `1.0.0`.
+      `src/rohd/README.md` 는 지금 **없다.** `make docs`(§4-3) 를 돌리면 생긴다.
+      지금 `generate-docs` 를 한 번 돌려 만들 수도 있지만, 그러면 아직 손으로 쓴
+      `src/ubuntu/README.md` 까지 같이 재생성돼 날아간다 — 템플릿 하나만 고르는 옵션이 없다.
+
+`version` 은 `0.0.1` 로 둔다 — 올릴 계획 없음 (결정됨).
 
 ### 2-2. 가져오지 않을 것 / 흡수할 것
 
-- [ ] `rohd-template/README.md` — 독립 리포용. 이 리포의 [README.md](README.md) 와 충돌한다.
-      **발행/개발 루프 설명만 흡수**하고 버린다.
-- [ ] `rohd-template/.github/workflows/release.yaml` — §1-1 에서 이미 가져다 쓴다.
-- [ ] `rohd-template/HANDOFF.md` — 일회용. 본문 스스로 "검증 끝나면 지우라"고 한다.
-      **단, 2-3 을 먼저 하고 지울 것** — 통과 기준이 여기에만 있다.
+- [x] ~~`rohd-template/README.md`~~ — 독립 리포용이라 버린다. 거기 있던
+      "`templates apply` 는 OCI 참조만 받는다"(= 발행 전에는 apply 를 시험할 수 없다)는
+      제약은 **어디에도 옮기지 않기로 했다.** `dev.md` 의 유일한 섹션은 테스트 하네스라
+      발행 얘기가 뜬금없고, `-t ./src/rohd` 를 시도하면 CLI 가 즉시 거부하므로 발견도 쉽다.
+      발행 절(§4-2)을 쓰게 되면 그때 자연히 들어갈 내용이다.
+- [x] ~~`rohd-template/.github/workflows/release.yaml`~~ — §1-1 에서 이미 가져다 썼다.
 
-- [ ] **prezto 를 빼는 방법을 안내한다.** 유지하기로 정해졌지만, 로그인 셸을 바꾸는 건
-      개인 취향에 가깝다. rohd 의 `devcontainer.json` 이 스스로 같은 논리를 적어뒀다:
+- [x] ~~`rohd-template/HANDOFF.md`~~ — **삭제함.** 통과 기준은
+      [test/rohd/test.md](test/rohd/test.md) 로 옮겼고, 나머지 근거도 흩어 놓았다.
+      지우기 전에 대조해서, **HANDOFF 에만 있던 근거 둘**을 파일 주석으로 옮겼다:
+      `dart.checkForSdkUpdates: false` 의 이유(feature 메타데이터)와 `pubspec.lock` 을
+      넣지 않는 이유(`pubspec.yaml`). `rohd-dev/` 는 gitignore 라 히스토리에도 없어서
+      그냥 지웠으면 영영 사라질 것이었다.
 
-      > AI agent tooling is deliberately absent — it is **per-developer preference,
-      > not a project dependency.** Put it in your own VS Code settings instead:
-      > `dev.containers.defaultFeatures`
+- [x] ~~**prezto 를 빼는 방법을 안내한다.**~~ → `docs/rohd.md` 에 `### prezto 빼기` 추가.
+      그냥 feature 를 지우면 **fzf 의 `^R` 이 같이 사라지고**(연동이 `extraZshrc` 에 얹혀
+      있어서) **로그인 셸이 bash 로 돌아간다**(zsh 를 로그인 셸로 만드는 것도 prezto 다).
+      bash 로 fzf 를 옮기는 법과, `dev.containers.defaultFeatures` 로 개인 설정에 두는
+      방법도 같이 적었다.
 
-      안 쓸 사람은 feature 를 지우면 되는데, **fzf 배선이 prezto 의 `extraZshrc` 에 얹혀 있어서**
-      같이 옮겨야 한다. `docs/rohd.md` 에 그 절차를 적을 것.
+      같은 파일의 "컨테이너가 주는 것" 표도 고쳤다 — Dart 를 `3.12.2` 고정이라고
+      적어놨고, CLI 도구 목록에 `lsd` `xxd` `file` `fzf` 가 빠져 있었다.
 
 ### 2-3. `test/rohd/test.sh`
 
@@ -273,16 +283,55 @@ HANDOFF.md 가 "CI 하네스를 전제로 하는데 아직 리포도 워크플�
       뺀 것(`dart test` 개수, RTL 해시·grep, 유틸리티 목록)과 이유도 그 문서에 적어뒀다.
       판단 기준 자체는 [dev.md](dev.md) 의 "무엇을 검사할 것인가" 로 일반화했다.
 
-- [ ] **한 번도 돌려보지 않았다.** `build.sh rohd` 로 확인할 것 셋:
-      - `dart --version` 의 정확한 출력 형식 (`Dart SDK version: 3.12.2` 로 가정)
-      - `package_config.json` 의 `"name": "rohd"` 표기 (공백 유무)
-      - feature 의 `updateContentCommand` 실패도 빌드를 실패시키는가
-        (`devcontainer.json` 직접 선언분으로는 실측했다)
+- [x] ~~**돌려서 확인**~~ — `my_design`(기본)과 `zzz_top` 둘 다 **11/11 통과**.
+      기대던 가정 셋도 전부 실측했다:
+      - `Dart SDK version: 3.12.2 (stable) ...` — 가정한 형식 맞음
+      - `package_config.json` 의 `"name": "rohd"` — 공백 표기 맞음
+      - **feature 안에 선언한 lifecycle hook 도 실패하면 빌드가 실패한다** —
+        로컬 feature 탐침으로 확인. 에러가 출처까지 밝힌다:
+        `updateContentCommand from Feature './features/boom' failed.`
 
-      앞의 둘은 틀리면 **거짓 실패**가 난다.
+      검출력도 확인했다 — placeholder 를 심고, fzf 함수 이름과 dart 버전을 틀리게 하면
+      각각 RED 가 난다.
 
-- [ ] **`projectName` 두 개로 시험** — `my_design` / `zzz_top`. 하네스를 두 번 돌리는 것이라
-      `test.sh` 안에 못 넣는다. CI 매트릭스(§5)에 넣기 전까지는 수동.
+- [x] ~~**`projectName` 두 개로 시험**~~ — `my_design` / `zzz_top` 수동으로 돌려 둘 다 통과.
+      `dart analyze` 가 무경고인 것이 핵심이다 — HANDOFF 가 이 절차로 잡았던 정렬 lint 가
+      재발하지 않는다는 뜻이다.
+
+- [ ] **조합 시험은 수동으로 둔다** (결정됨). 자동화하기 어렵고, 매 PR 마다 돌릴 값어치도
+      없다 — 잡으려는 것이 **옵션 집합이나 lint 설정을 바꿨을 때 생기는 문제**라서
+      PR 마다 바뀌지 않는다. 대신 **언제 다시 돌려야 하는지**만 남긴다:
+
+      - `proposals` 나 `default` 를 고쳤을 때
+      - `analysis_options.yaml` 을 고쳤을 때 (정렬 lint 가 여기서 났다)
+      - 옵션을 추가하거나 없앴을 때
+
+      ```bash
+      TEMPLATE_ARGS='{"projectName":"zzz_top"}' ./.github/actions/smoke-test/build.sh rohd
+      ./.github/actions/smoke-test/test.sh rohd
+      ```
+
+      마지막으로 돌린 조합 넷 — 전부 11/11:
+      기본(`my_design`/`3.13.2`), `projectName=zzz_top`, `dartVersion=3.13.1`,
+      `dartVersion=3.12.2`
+
+- [ ] **`proposals` 가 낡는다.** 손으로 적은 목록이라 Dart 릴리스를 따라가지 못한다.
+      `latest` 를 넣는 안은 접었다 — URL 은 실제로 동작하지만(HTTP 200, 현재 3.13.2),
+      **스모크 테스트 6 번이 깨지고**(옵션은 `latest`, `dart --version` 은 숫자),
+      "고정된 SDK" 라는 템플릿의 전제와 어긋나며, 언젠가 `latest` 가 4.x 가 되면
+      `sdk: ^3.12.2` 와 충돌한다. Dart 에는 LTS 채널이 없다
+      (`be beta dev integration main preview stable try`).
+
+- [x] ~~**dart feature 의 자체 default**~~ → `3.13.2` 로 맞췄다. **두 군데였다** —
+      `devcontainer-feature.json` 의 옵션 기본값과 `install.sh` 의
+      `VERSION=${VERSION:-...}` 폴백. 정상 경로에서는 CLI 가 옵션 값을 넘기므로 후자는
+      안 쓰이지만, 어긋나 있으면 나중에 헷갈린다.
+
+- [x] ~~**`devcontainer.json` 헤더 주석이 상류 ubuntu 를 가리킨다.**~~ → **지웠다.**
+      `// README at: .../devcontainers/templates/tree/main/src/ubuntu` 는 씨앗에 딸려온
+      것으로 rohd 와 무관했고, 사용자 프로젝트로 복사되는 자리였다. 두 줄이 한 문장이라
+      앞줄도 같이 고쳐 `// For format details, see https://aka.ms/devcontainer.json` 만
+      남겼다. `src/ubuntu` 도 같이.
 
 ### 2-4. 에디터 함정 — **막지 않기로 했다**
 

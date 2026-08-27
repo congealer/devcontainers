@@ -44,11 +44,41 @@ CLI는 **확장을 설치하지 않고** VS Code 설정도 읽지 않습니다. 
 
 | | |
 |---|---|
-| Dart | `3.12.2` 고정 — `pubspec.yaml`의 `sdk: ^3.12.2`와 일치 |
+| Dart | `dartVersion` 옵션으로 고정 — `pubspec.yaml`의 `sdk: ^3.12.2`를 만족해야 합니다 |
 | `lramseyer.vaporview` | `build/waves/*.vcd`를 에디터에서 바로 봅니다 |
 | `mshr-h.veriloghdl` | 생성된 `build/*.sv` 문법 강조 |
 | 셸 | zsh + prezto, fzf 연동 (`^R` 히스토리 검색) |
-| CLI 도구 | gh, ripgrep, fd, bat, tig, tldr |
+| CLI 도구 | gh, fzf, ripgrep, fd, bat, lsd, tig, tldr, xxd, file |
+
+### prezto 빼기
+
+zsh를 안 쓰신다면 `.devcontainer/devcontainer.json`의 `features`에서 prezto 항목을
+지우면 됩니다. 세 줄입니다:
+
+```jsonc
+"ghcr.io/congealer/devcon-features/prezto:1": {
+    "extraZshrc": "(( $+commands[fzf] )) && source <(fzf --zsh)"
+},
+```
+
+**그냥 지우면 fzf의 `^R`도 같이 사라집니다.** fzf 바이너리는 별도 feature라 남지만,
+셸 연동이 위의 `extraZshrc`에 얹혀 있기 때문입니다. 그리고 로그인 셸이 bash로
+돌아갑니다 — zsh를 로그인 셸로 만드는 것도 prezto가 하는 일입니다.
+
+fzf 연동을 유지하려면 bash 쪽으로 옮기세요:
+
+```jsonc
+"postCreateCommand": "echo 'eval \"$(fzf --bash)\"' >> ~/.bashrc"
+```
+
+prezto가 싫은 게 아니라 **프로젝트가 강제하는 게 싫은 것**이라면, 템플릿에서 빼고
+본인 VS Code 설정에 두는 방법도 있습니다. 그러면 모든 dev container에 붙습니다:
+
+```jsonc
+"dev.containers.defaultFeatures": {
+    "ghcr.io/congealer/devcon-features/prezto:1": {}
+}
+```
 
 ### Icarus Verilog 켜기
 

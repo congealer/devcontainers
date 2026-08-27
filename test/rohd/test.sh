@@ -9,7 +9,7 @@
 # No `set -e` on purpose: `check` collects failures so reportResults can list
 # them all at once. See dev.md.
 
-cd $(dirname "$0")
+cd "$(dirname "$0")" || exit 1
 source test-utils.sh
 
 # The option values build.sh actually substituted, so checks can assert against

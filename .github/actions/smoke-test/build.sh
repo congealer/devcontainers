@@ -15,9 +15,37 @@
 # body -- the test folder is copied in afterwards, so `${templateOption:...}`
 # inside a test script is never replaced.
 
-TEMPLATE_ID="$1"
-
 set -e
+
+# Cleanup lives here because this script is what decides the names: the
+# workspace folder set below becomes the image name `devcontainer up` builds,
+# so matching on that name anywhere else would repeat a convention it does not
+# own.
+#
+#   ./build.sh clean           what a run leaves behind, for every template
+#   ./build.sh clean <id>      the same, for one of them
+#
+# test.sh drops its container on the way out but never the image, because
+# dropping it would make the next run rebuild from scratch. That is why images
+# pile up and why this exists.
+if [ "$1" = "clean" ] ; then
+    for t in ${2:-$(ls src)} ; do
+        docker ps -aq --filter "label=test-container=${t}" | xargs -r docker rm -f
+        docker images -q --filter "reference=vsc-${t}-*-features" \
+                         --filter "reference=vsc-${t}-*-features-uid" \
+            | xargs -r docker rmi -f
+        rm -rf "/tmp/${t}"
+    done
+
+    # Not optional. Removing the images leaves buildkit holding snapshots that
+    # reference them, and the next build dies on "parent snapshot ... does not
+    # exist" until the cache goes too. -a rather than dangling-only because
+    # that is what was seen to clear it; whether -f alone suffices is untested.
+    docker builder prune -af
+    exit 0
+fi
+
+TEMPLATE_ID="$1"
 
 shopt -s dotglob
 
@@ -31,10 +59,20 @@ elif ! jq -e 'type == "object"' >/dev/null 2>&1 <<<"${TEMPLATE_ARGS}" ; then
 fi
 
 SRC_DIR="/tmp/${TEMPLATE_ID}"
+ID_LABEL="test-container=${TEMPLATE_ID}"
 
-# A previous run may have been kept for inspection (KEEP=1 in test.sh). Without
-# this, `cp -R` would nest the template inside the stale directory.
+# A previous run may have been kept for inspection (KEEP=1 in test.sh). Both
+# halves of what it left have to go, unconditionally -- KEEP means "leave it up
+# after the test", not "reuse it next time".
+#
+# The directory, or `cp -R` would nest the template inside the stale one. And
+# the container, or `devcontainer up` would adopt it rather than create one,
+# leaving its bind mount pointing at the directory just deleted. `exec` then
+# fails with "current working directory is outside of container mount namespace
+# root", which reads like a docker fault rather than a stale container.
 rm -rf "${SRC_DIR}"
+docker ps -aq --filter "label=${ID_LABEL}" | xargs -r docker rm -f > /dev/null
+
 cp -R "src/${TEMPLATE_ID}" "${SRC_DIR}"
 
 # Collected as `name=value` lines while substituting, written out once the test
@@ -94,9 +132,6 @@ if [ -d "${TEST_DIR}" ] ; then
 fi
 
 export DOCKER_BUILDKIT=1
-echo "(*) Installing @devcontainer/cli"
-npm install -g @devcontainers/cli
 
 echo "Building Dev Container"
-ID_LABEL="test-container=${TEMPLATE_ID}"
 devcontainer up --id-label ${ID_LABEL} --workspace-folder "${SRC_DIR}"

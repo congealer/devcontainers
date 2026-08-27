@@ -23,7 +23,7 @@ $(if $(filter $(1),$(TEMPLATES)),,\
 endef
 
 .DEFAULT_GOAL := help
-.PHONY: help build test docs release clean distclean
+.PHONY: help build test prepare docs release clean distclean
 
 # build-% is a prerequisite of test-%, so make would treat it as an
 # intermediate file and try to delete it afterwards. Nothing of that name
@@ -60,8 +60,16 @@ test-%: build-%  ## One template: run its test.sh in the container, then tear do
 # '-p' wants the project root, the folder holding src/ and test/ -- unlike the
 # Features equivalent, which wants the folder the Features live in. There is no
 # --namespace here either; owner and repo are separate flags.
+prepare:  ## Pick a template and bump its version, then refresh the docs
+	@./prepare.py
+
+# '-p' wants the folder the templates live in, despite the help text calling it
+# the project root that holds src/ and test/. Given '.' it walks every child of
+# the repository root -- test/, todo.md and all -- looking for a
+# devcontainer-template.json. There is no --namespace either; owner and repo
+# are separate flags.
 docs:  ## Regenerate every src/<template>/README.md from its metadata and NOTES.md
-	$(DEVCONTAINER) templates generate-docs -p . \
+	$(DEVCONTAINER) templates generate-docs -p src \
 	    --github-owner $(word 1,$(subst /, ,$(NAMESPACE))) \
 	    --github-repo $(word 2,$(subst /, ,$(NAMESPACE)))
 

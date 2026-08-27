@@ -24,7 +24,7 @@
 
 ## 진행 상황
 
-작업 브랜치는 `tidy`.
+작업 브랜치는 `rohd`.
 
 - [x] **hello/color 제거**
       템플릿 둘과 테스트 삭제, 루트 README 목록 정리, `.gitignore` 추가, `devcontainer-lock.json` 커밋
@@ -41,7 +41,14 @@
       로컬에서 실제로 돌려 확인했다 — `build.sh` → `test.sh` 3/3 통과(exit 0),
       옵션을 어긋나게 하면 `distro` 가 RED(exit 1), 정리까지 동작.
 
-- [ ] **rohd 이식 + Makefile** (§2 → §4) ← **다음.** 한 브랜치에서. **당장 쓸 것은 rohd**
+- [ ] **rohd 이식 + Makefile** (§2 → §4) ← **진행 중.** 한 브랜치에서
+      - [x] `src/rohd/` 이식, 네임스페이스 치환, Dart 3.13.2 정렬, `NOTES.md`
+      - [x] `test/rohd/` — 검사 11 개, `my_design`/`zzz_top` 둘 다 통과
+      - [x] `Makefile` — 스크립트를 감싸는 입구 (§4-1)
+      - [x] `prepare.py` (§4-2), 개발 컨테이너 재구성 (§4-5)
+      - [x] 문서 — `dev.md` 에 Makefile·문서·릴리스 절, 루트 README 를 `dev.md` 로 (§4-4)
+      - [ ] **발행** — `gh auth login` → `make prepare` → 커밋 → `make release`.
+            `rohd` 는 아직 `0.0.1` 이고 발행된 적이 없다
 - [ ] **ubuntu 재설계 + CI 정비** (§3, §5) — 그 다음
 
 ---
@@ -244,8 +251,6 @@ check "distro" [ ! $(lsb_release -c | grep nobel) ]
       지금 `generate-docs` 를 한 번 돌려 만들 수도 있지만, 그러면 아직 손으로 쓴
       `src/ubuntu/README.md` 까지 같이 재생성돼 날아간다 — 템플릿 하나만 고르는 옵션이 없다.
 
-`version` 은 `0.0.1` 로 둔다 — 올릴 계획 없음 (결정됨).
-
 ### 2-2. 가져오지 않을 것 / 흡수할 것
 
 - [x] ~~`rohd-template/README.md`~~ — 독립 리포용이라 버린다. 거기 있던
@@ -297,30 +302,6 @@ HANDOFF.md 가 "CI 하네스를 전제로 하는데 아직 리포도 워크플�
 - [x] ~~**`projectName` 두 개로 시험**~~ — `my_design` / `zzz_top` 수동으로 돌려 둘 다 통과.
       `dart analyze` 가 무경고인 것이 핵심이다 — HANDOFF 가 이 절차로 잡았던 정렬 lint 가
       재발하지 않는다는 뜻이다.
-
-- [ ] **조합 시험은 수동으로 둔다** (결정됨). 자동화하기 어렵고, 매 PR 마다 돌릴 값어치도
-      없다 — 잡으려는 것이 **옵션 집합이나 lint 설정을 바꿨을 때 생기는 문제**라서
-      PR 마다 바뀌지 않는다. 대신 **언제 다시 돌려야 하는지**만 남긴다:
-
-      - `proposals` 나 `default` 를 고쳤을 때
-      - `analysis_options.yaml` 을 고쳤을 때 (정렬 lint 가 여기서 났다)
-      - 옵션을 추가하거나 없앴을 때
-
-      ```bash
-      TEMPLATE_ARGS='{"projectName":"zzz_top"}' ./.github/actions/smoke-test/build.sh rohd
-      ./.github/actions/smoke-test/test.sh rohd
-      ```
-
-      마지막으로 돌린 조합 넷 — 전부 11/11:
-      기본(`my_design`/`3.13.2`), `projectName=zzz_top`, `dartVersion=3.13.1`,
-      `dartVersion=3.12.2`
-
-- [ ] **`proposals` 가 낡는다.** 손으로 적은 목록이라 Dart 릴리스를 따라가지 못한다.
-      `latest` 를 넣는 안은 접었다 — URL 은 실제로 동작하지만(HTTP 200, 현재 3.13.2),
-      **스모크 테스트 6 번이 깨지고**(옵션은 `latest`, `dart --version` 은 숫자),
-      "고정된 SDK" 라는 템플릿의 전제와 어긋나며, 언젠가 `latest` 가 4.x 가 되면
-      `sdk: ^3.12.2` 와 충돌한다. Dart 에는 LTS 채널이 없다
-      (`be beta dev integration main preview stable try`).
 
 - [x] ~~**dart feature 의 자체 default**~~ → `3.13.2` 로 맞췄다. **두 군데였다** —
       `devcontainer-feature.json` 의 옵션 기본값과 `install.sh` 의
@@ -487,31 +468,33 @@ noble      sha256:cfd5dd36c0d0d88de01
 
 ### 4-1. Makefile
 
-- [ ] **`Makefile`.** devcon-features 것을 뼈대로 하되 테스트 부분은 다시 짠다.
+- [x] **`Makefile`.** devcon-features 것을 뼈대로 하되 테스트 부분은 다시 짠다.
       가져올 것: `.DEFAULT_GOAL := help` + `## ` 주석 자기문서화, 덮어쓸 수 있는 기본값,
       `TEMPLATES := $(notdir $(wildcard src/*))`, `require-template` 가드,
       `clean` / `distclean`.
 
-- [ ] **테스트 타깃 설계.** `templates test` 가 없으므로 대응물이 없다.
+- [x] **테스트 타깃 설계.** `templates test` 가 없으므로 대응물이 없다.
       Makefile 이 `smoke-test/{build,test}.sh` 를 감쌀지, 로직을 흡수하고 스크립트를 없앨지.
 
-- [ ] **`clean` 의 이미지 패턴.** devcon-features 의 `vsc-<타임스탬프>-<해시>-features` 는
+- [x] **`clean` 의 이미지 패턴.** devcon-features 의 `vsc-<타임스탬프>-<해시>-features` 는
       템플릿 쪽과 다르다. `devcontainer up` 은 폴더 이름 기반 이미지를 남긴다.
 
 ### 4-2. `make prepare` / `make release` / `make docs`
 
-- [ ] **`prepare.py`.** `devcontainer-feature.json` → `devcontainer-template.json` 만 바꾸면
+- [x] **`prepare.py`.** `devcontainer-feature.json` → `devcontainer-template.json` 만 바꾸면
       나머지는 그대로 동작한다. 핵심(버전이 박힌 커밋 이후에 바뀐 템플릿을 git 로그로 찾아
       미리 체크)은 템플릿에도 유효하다. 버전만 쓰고 커밋은 사람에게 남긴다.
 
-- [ ] **`make release`** — `gh auth status` 확인 후
+- [x] **`make release`** — `gh auth status` 확인 후
       `GITHUB_TOKEN=$(gh auth token) devcontainer templates publish -r ghcr.io -n congealer/devcontainers ./src`.
       docker 불필요.
 
-- [ ] **`make docs`** — 인자가 features 와 다르다:
-      `devcontainer templates generate-docs -p . --github-owner congealer --github-repo devcontainers`
+- [x] **`make docs`** — 인자가 features 와 다르다:
+      `devcontainer templates generate-docs -p src --github-owner congealer --github-repo devcontainers`.
+      `-p` 는 도움말과 달리 **템플릿이 들어 있는 폴더**를 원한다. `.` 를 주면 리포 루트의
+      모든 하위를 훑는다.
 
-- [ ] **릴리스 전 체크리스트 문서화** (§4-4):
+- [x] **릴리스 전 체크리스트 문서화** (§4-4):
       - **`version` 이 발행 여부를 정하는 유일한 스위치다.** 안 올리면 조용히 아무 일도 안 일어난다
       - **태그가 움직인다.** `1.3.0` 을 올리면 `1.3.0`/`1.3`/`1`/`latest` 가 함께 올라가는데
         `1` 과 `latest` 는 **기존에서 옮겨온다** → `:1` 로 고정한 사용자가 다음 빌드에서 바로 받는다
@@ -580,41 +563,39 @@ _Note: This file was auto-generated from the [devcontainer-template.json](https:
 
 </details>
 
-- [ ] **손으로 쓴 한국어 README 를 `NOTES.md` 로 옮긴다** — ubuntu, rohd.
+- [x] **손으로 쓴 한국어 README 를 `NOTES.md` 로 옮긴다** — ubuntu, rohd.
       옮기지 않으면 릴리스 때 날아간다.
-- [ ] **apply 예시는 NOTES.md 에 직접 쓴다.** 템플릿 틀에는 `## Example Usage` 가 **없다.**
-- [ ] **옵션 표를 손으로 쓰지 않는다.** `#{OptionsTable}` 이 만든다. 지금
+- [x] **apply 예시는 NOTES.md 에 직접 쓴다.** 템플릿 틀에는 `## Example Usage` 가 **없다.**
+- [x] **옵션 표를 손으로 쓰지 않는다.** `#{OptionsTable}` 이 만든다. 지금
       [src/ubuntu/README.md](src/ubuntu/README.md#L7-L11) 에 손으로 쓴 표가 있는데 드리프트 원인이다.
 
 ### 4-4. `dev.md`
 
 개발자용 문서는 루트 [dev.md](dev.md) 로 분리했다 (devcon-features 의 `CONTRIBUTING.md`
-자리). 지금은 **테스트 하네스** 절 하나뿐이다 — 콜 체인, `KEEP`/`trap`, 템플릿 `test.sh`
-작성법, CI.
+자리). 절 구성은 **Makefile / 테스트 하네스 / 문서 / 릴리스 / CI**.
 
-- [ ] **`make` 타깃 표와 `clean`/`distclean` 이 지우는 것** — §4-1 이후.
-- [ ] **문서 생성 규칙** — README 는 자동 생성물이니 `NOTES.md` 를 고치라는 안내 (§4-3).
-- [ ] **릴리스 절차와 주의점** — §4-2 의 체크리스트.
+- [x] **`make` 타깃 표와 `clean`/`distclean` 이 지우는 것** — §4-1 이후.
+- [x] **문서 생성 규칙** — README 는 자동 생성물이니 `NOTES.md` 를 고치라는 안내 (§4-3).
+- [x] **릴리스 절차와 주의점** — §4-2 의 체크리스트.
 - [ ] **CI 절 갱신** — §5 가 끝나면 실제 형상과 맞는지 대조. 지금은 목표 형상을 적어뒀다.
-- [ ] **루트 README 의 "Testing Templates" 절을 dev.md 로 넘긴다** — 지금 로컬 실행법이
+- [x] **루트 README 의 "Testing Templates" 절을 dev.md 로 넘긴다** — 지금 로컬 실행법이
       양쪽에 중복돼 있다.
 
 ### 4-5. 개발 컨테이너
 
-> 전면 재검토가 필요하다 (docker-in-docker 2 → 4 업데이트 알림 등). 아래는 이미 확인된 것.
+> **완료.** base 를 `base:ubuntu-24.04` 로 바꾸고 feature 로 다시 짰다.
 
-- [ ] **Node 를 20 으로.** [.devcontainer/devcontainer.json:3](.devcontainer/devcontainer.json#L3)
-      이 `javascript-node:1-18-bullseye` 이고 실제로 **v18.20.8** 인데
-      `@devcontainers/cli` 는 **Node 20+** 를 요구한다. devcon-features 는 `1-20-bookworm`.
-- [ ] **`github-cli` feature 추가** — `make release` 의 `gh auth token` 에 필요.
-      **지금 이 컨테이너에 `gh` 가 없다** (`command not found` 확인).
-- [ ] **python + questionary** — `make prepare` 용.
-      `pip install --break-system-packages questionary`
-- [ ] **`dbaeumer.vscode-eslint` 확장 제거** — template-starter 가 JS 기반이라 붙어 있던 것.
-      이 리포는 셸과 JSON 뿐이다.
-- [ ] **`json.schemas` 설정** — 에디터에서 `devcontainer-template.json` 스키마 검증.
-- [ ] **`npm install -g @devcontainers/cli` 를 `updateContentCommand` 로.**
-- [ ] **docker-in-docker 4 로 올릴지 검토.**
+- [x] **base 이미지 교체** — `javascript-node:1-18-bullseye` → `base:ubuntu-24.04`.
+- [x] **Node 는 넣지 않는다.** `devcontainers-cli` feature 가 node 18 을 끌어오고 CLI
+      0.83.3 이 붙는다. `engines: node >=20` 은 권고일 뿐이라 실제로 동작하며, 20+ 가
+      있어야만 되는 기능도 없었다. node feature 는 중복이라 뺐다.
+- [x] **`github-cli` feature 추가** — `make release` 의 `gh auth token` 에 필요.
+- [x] **python + questionary** — `make prepare` 용. base:ubuntu 의 Python 3.12 가
+      PEP 668 externally-managed 라 `--break-system-packages` 가 필요하다.
+- [x] **`dbaeumer.vscode-eslint` 확장 제거** — template-starter 가 JS 기반이라 붙어 있던 것.
+- [x] **`json.schemas` 설정 제거.**
+- [x] **`npm install -g @devcontainers/cli` 제거** — feature 로 대체.
+- [x] **docker-in-docker 4 로 올렸다.**
 
 ---
 
@@ -648,6 +629,11 @@ _Note: This file was auto-generated from the [devcontainer-template.json](https:
 - [ ] **`run:` 을 make 타깃으로.** `run: make test-${{ matrix.template }}` 형태.
       로컬과 CI 가 같은 경로를 탄다.
 
+- [ ] **`npm install -g @devcontainers/cli` 를 워크플로에 넣는다.** `build.sh` 에 있던 것을
+      뺐다 — 개발 컨테이너에는 feature 로 이미 깔려 있어 root 소유 설치와 충돌(EACCES)했다.
+      러너에는 CLI 가 없으므로 **CI 쪽에서 다시 넣어야 한다.** 상류(features, templates,
+      template-starter)도 전부 워크플로 스텝으로 설치한다.
+
 - [ ] **`smoke-test` composite action 의 거취.** Makefile 이 `build.sh`/`test.sh` 로직을
       흡수하면 이 action 은 사라진다. 감싸기만 하면 남는다 (§4-1 결정에 따라).
 
@@ -679,10 +665,6 @@ _Note: This file was auto-generated from the [devcontainer-template.json](https:
 
 ## 6. 정리
 
-- [ ] **`rohd-dev/` 를 치운다.** `rohd-dev/rohd` (46M), `rohd-dev/rohd-project` (41M),
-      `rohd-dev/devcon-features` 는 **중첩 git 리포**다. `.gitignore` 에 넣어뒀다.
-      **rohd 이식이 끝나면 별도 브랜치에서 정리** (결정됨).
-
 - [x] ~~`.devcontainer/devcontainer-lock.json` 을 커밋할지~~ → **커밋함.**
       docker-in-docker 2.17.0 을 digest 로 고정. §4-5 에서 feature 를 추가하면 바뀐다.
 
@@ -698,7 +680,7 @@ _Note: This file was auto-generated from the [devcontainer-template.json](https:
       .env  .DS_Store  .dart_tool/x                     IGNORED   ← 원래 목적은 유지
       ```
 
-- [ ] **루트 README 갱신** — `rohd` 를 템플릿 목록에 추가, 개발자용 내용은 [dev.md](dev.md) 로
+- [x] **루트 README 갱신** — `rohd` 를 템플릿 목록에 추가, 개발자용 내용은 [dev.md](dev.md) 로
       이관(§4-4).
 
 - [ ] **리포 토픽에 `devcontainer-templates` 추가.** 없으면 containers.dev 색인에 안 잡히고

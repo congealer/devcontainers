@@ -3,21 +3,62 @@
 이 저장소의 템플릿을 고칠 때 필요한 내용입니다. 템플릿을 **사용하는** 방법은
 [README.md](README.md) 에 있습니다.
 
+## Makefile
+
+입구는 `make` 입니다. `make` 또는 `make help` 로 타깃 목록이 나옵니다.
+
+| 타깃 | |
+|---|---|
+| `test` | 모든 템플릿을 빌드하고 테스트 |
+| `test-<id>` | 하나만. `build-<id>` 를 의존하므로 이것만 불러도 됨 |
+| `build-<id>` | 컨테이너만 띄우고 테스트는 안 함 |
+| `clean` / `clean-<id>` | 실행이 남긴 컨테이너·이미지·`/tmp/<id>`·빌드 캐시 |
+| `distclean` | 위 전부 + 남은 베이스 이미지 |
+| `prepare` | 버전을 올리고 문서를 새로 만듦 |
+| `docs` | 문서만 새로 만듦 |
+| `release` | GHCR 에 발행 |
+
+없는 템플릿 이름을 주면 스크립트로 넘기기 전에 걸러냅니다.
+
+```console
+$ make test-nope
+Makefile:49: *** unknown template 'nope'. available: rohd ubuntu.  Stop.
+```
+
+옵션 값은 환경 변수로 넘깁니다. `devcontainer templates apply -a` 와 같은 JSON 형태입니다.
+
+```bash
+make build-rohd TEMPLATE_ARGS='{"projectName":"zzz_top"}'
+make test-rohd  KEEP=1
+```
+
+### 무엇이 쌓이고 무엇이 지워지나
+
+`test.sh` 는 끝날 때 컨테이너를 지우지만 **이미지는 남깁니다.** 지우면 다음 실행이 처음부터
+다시 빌드해야 하기 때문입니다 — rohd 라면 Dart SDK 를 매번 다시 받습니다. 그래서 이미지는
+`clean` 을 부를 때까지 쌓입니다.
+
+`clean` 은 이미지와 함께 **빌드 캐시도 지웁니다.** 선택이 아닙니다. 이미지만 지우면 buildkit
+이 사라진 이미지를 참조하는 스냅샷을 붙들고 있어, 다음 빌드가
+`parent snapshot ... does not exist` 로 죽습니다.
+
+`clean` 의 구현은 [build.sh](.github/actions/smoke-test/build.sh) 안에 있습니다
+(`build.sh clean [<id>]`). 이미지 이름이 `vsc-<id>-<해시>-features` 인 것은 `build.sh` 가
+작업 폴더를 `/tmp/<id>` 로 정하기 때문이라, 그 이름 규칙을 아는 쪽이 지우는 것도 맡습니다.
+
 ## 테스트 하네스
 
 템플릿 하나를 실제로 적용해 컨테이너를 띄우고, 그 안에서 검증 스크립트를 돌리는 구조입니다.
 `devcontainer templates test` 같은 명령이 **없기 때문에**(features 쪽에만 있습니다) 이
-저장소가 직접 갖고 있는 스크립트 두 개로 돌아갑니다.
-
-로컬에서는 **저장소 루트에서** 이렇게 실행합니다:
+저장소가 직접 갖고 있는 스크립트 두 개로 돌아갑니다. `make` 는 그 둘을 부를 뿐입니다.
 
 ```bash
 ./.github/actions/smoke-test/build.sh ubuntu   # 컨테이너를 만든다
 ./.github/actions/smoke-test/test.sh  ubuntu   # 그 안에서 테스트를 돌리고 치운다
 ```
 
-`build.sh` 가 `src/<id>` 와 `test/<id>` 를 상대 경로로 찾으므로 **반드시 루트에서** 실행해야
-합니다. CI 도 같은 두 스크립트를 같은 방식으로 부릅니다.
+`build.sh` 가 `src/<id>` 와 `test/<id>` 를 상대 경로로 찾으므로 **반드시 저장소 루트에서**
+실행해야 합니다. CI 도 같은 두 스크립트를 같은 방식으로 부릅니다.
 
 ### 콜 체인
 
@@ -25,6 +66,7 @@
 build.sh <id>                                     [호스트 / 저장소 루트]
   │
   ├─ rm -rf /tmp/<id>                             앞선 실행이 남긴 것을 치운다
+  ├─ docker rm -f <같은 라벨의 컨테이너>          같은 이유. 아래 참고
   ├─ cp -R src/<id> /tmp/<id>                     템플릿 본체를 작업 사본으로
   ├─ ${templateOption:X} 치환                     TEMPLATE_ARGS 또는 각 옵션의 default
   ├─ cp test/<id>/*        → /tmp/<id>/test-project/    ← 치환 '뒤에' 복사된다
@@ -119,7 +161,20 @@ devcontainer exec --workspace-folder /tmp/ubuntu --id-label test-container=ubunt
 않고** 고쳐서 다시 돌릴 수 있습니다. 검사가 실제로 검출력이 있는지(일부러 틀리게 만들어
 RED 를 내보는 것) 확인할 때 이렇게 씁니다.
 
-남겨둔 `/tmp/<id>` 는 다음 `build.sh` 가 먼저 지우므로 재시도를 오염시키지 않습니다.
+남겨둔 것은 다음 `build.sh` 가 **디렉터리와 컨테이너를 모두** 먼저 지우므로 재시도를
+오염시키지 않습니다. `KEEP` 은 "테스트 뒤에 남겨두라"는 뜻이지 "다음에 재사용하라"가
+아닙니다.
+
+컨테이너까지 지우는 이유가 있습니다. 디렉터리만 지우면 `devcontainer up` 이 같은 라벨의
+남은 컨테이너를 **새로 만드는 대신 채택**하는데, 그 컨테이너의 바인드 마운트는 방금 지워진
+디렉터리를 가리킵니다. 그러면 `exec` 가 이렇게 실패합니다:
+
+```
+current working directory is outside of container mount namespace root
+  -- possible container breakout detected
+```
+
+docker 가 고장 난 것처럼 읽히지만 원인은 낡은 컨테이너입니다.
 
 ### 무엇을 검사할 것인가
 
@@ -196,9 +251,68 @@ reportResults
 그 검사에 검출력이 있는지 알 수 없습니다 — 조건을 잘못 쓰면 아무것도 검증하지 않으면서
 늘 통과하는 검사가 되기 쉽습니다. 위의 `KEEP=1` 이 그 확인을 재빌드 없이 하게 해줍니다.
 
-### CI
+## 문서
 
-`.github/workflows/test-pr.yaml` 이 PR 에서 돕니다.
+`src/<id>/README.md` 는 **자동 생성물입니다.** 직접 고치면 `make docs` 나 `make prepare` 가
+덮어씁니다. 손으로 쓸 내용은 같은 디렉터리의 `NOTES.md` 에 넣으세요.
+
+```
+# <name> (<id>)                     ← devcontainer-template.json 의 name, id
+<description>                       ← 같은 파일의 description
+## Options                          ← options 에서 만든 표
+─────────────────────────────
+NOTES.md 내용이 여기 들어갑니다
+─────────────────────────────
+---
+_Note: This file was auto-generated from the devcontainer-template.json..._
+```
+
+옵션 표에는 `description` / `type` / `default` 만 들어갑니다. **`proposals` 는 안 나옵니다** —
+사용자에게 선택지를 보이려면 `NOTES.md` 에 적거나 `description` 에 녹여야 합니다.
+
+feature 쪽 생성 틀에는 있는 `## Example Usage` 절이 **템플릿 틀에는 없습니다.** apply
+예시도 `NOTES.md` 에 직접 씁니다.
+
+템플릿 하나만 다시 생성할 수는 없습니다. `generate-docs` 에 템플릿을 고르는 옵션이 없어서
+`-p` 에 준 디렉터리의 하위를 전부 훑습니다. 생성이 결정적이라 내용이 바뀐 것에만 diff 가
+생깁니다.
+
+`templates apply` 는 `devcontainer-template.json` / `README.md` / `NOTES.md` 를 **제외하고**
+복사합니다. 그래서 사용자가 만든 프로젝트에는 이 셋이 안 들어갑니다 — 만들어진 프로젝트를
+쓰는 방법은 다른 파일에 둬야 합니다 (rohd 는 `docs/rohd.md`).
+
+## 릴리스
+
+```bash
+make prepare     # 버전을 올리고 docs 를 새로 만든다. 커밋은 안 한다
+git commit
+make release     # GHCR 에 발행
+```
+
+`make prepare` 는 **버전이 박힌 커밋 이후에 내용이 바뀐 템플릿을 미리 체크해 줍니다.**
+그게 이 단계의 존재 이유입니다 — 아래 첫 항목 때문입니다.
+
+올리기 전에 알아야 할 것들:
+
+- **`version` 이 발행 여부를 정하는 유일한 스위치입니다.** 이미 발행된 버전은 CLI 가
+  건너뛰므로, 안 올리면 **조용히 아무 일도 일어나지 않습니다.** 에러도 안 납니다
+- **태그가 움직입니다.** `1.3.0` 을 올리면 `1.3.0`/`1.3`/`1`/`latest` 가 함께 올라가는데
+  `1` 과 `latest` 는 **기존 것에서 옮겨옵니다.** `:1` 로 고정한 사용자가 다음 빌드에서 바로
+  받으므로, 올리기 전에 `make test` 가 통과했는지 확인하세요
+- **GHCR 패키지는 처음 올리면 private 입니다.** 공개 전환과 저장소 연결을 패키지 설정에서
+  한 번 해줘야 합니다
+- `make release` 는 `gh auth token` 으로 **개인 자격증명**을 씁니다. `gh auth login` 이
+  먼저입니다
+
+발행 전에는 `templates apply` 로 시험해 볼 수 없습니다. `--template-id` 가 **OCI 참조만**
+받고 로컬 경로를 안 받기 때문입니다. 그래서 하네스가 apply 를 부르지 않고 스스로 복사하고
+치환합니다 — **하네스가 검증하는 것은 우리 치환기이지 진짜 렌더러가 아닙니다.**
+
+## CI
+
+> **아래는 목표 형상입니다. 아직 그렇게 돼 있지 않습니다.** 지금 `test-pr.yaml` 의
+> paths-filter 에는 없어진 템플릿 이름만 남아 매트릭스가 비고, `continue-on-error` 때문에
+> 실패해도 초록으로 뜹니다. 그때까지 검증은 로컬 `make test` 로 합니다.
 
 ```
 test-pr.yaml

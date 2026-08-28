@@ -55,7 +55,7 @@
 				"mshr-h.veriloghdl" // syntax for generated build/*.sv
 			]
 		}
-	},
+	}
 
 	// AI agent tooling is deliberately absent -- it is per-developer preference,
 	// not a project dependency. Put it in your own VS Code settings instead:
@@ -64,6 +64,4 @@
 	//     "ghcr.io/anthropics/devcontainer-features/claude-code:1": {},
 	//     "ghcr.io/fjktkm/devcontainer-features/agent-persistence:1": { "scope": "user" }
 	//   }
-
-	"remoteUser": "vscode"
 }

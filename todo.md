@@ -41,15 +41,20 @@
       로컬에서 실제로 돌려 확인했다 — `build.sh` → `test.sh` 3/3 통과(exit 0),
       옵션을 어긋나게 하면 `distro` 가 RED(exit 1), 정리까지 동작.
 
-- [ ] **rohd 이식 + Makefile** (§2 → §4) ← **진행 중.** 한 브랜치에서
+- [x] **rohd 이식 + Makefile** (§2 → §4) — 완료
       - [x] `src/rohd/` 이식, 네임스페이스 치환, Dart 3.13.2 정렬, `NOTES.md`
       - [x] `test/rohd/` — 검사 11 개, `my_design`/`zzz_top` 둘 다 통과
       - [x] `Makefile` — 스크립트를 감싸는 입구 (§4-1)
       - [x] `prepare.py` (§4-2), 개발 컨테이너 재구성 (§4-5)
       - [x] 문서 — `dev.md` 에 Makefile·문서·릴리스 절, 루트 README 를 `dev.md` 로 (§4-4)
-      - [ ] **발행** — `gh auth login` → `make prepare` → 커밋 → `make release`.
-            `rohd` 는 아직 `0.0.1` 이고 발행된 적이 없다
-- [ ] **ubuntu 재설계 + CI 정비** (§3, §5) — 그 다음
+      - [x] **발행** — `0.0.2` 로 GHCR 에 올렸다. 패키지를 public 으로 바꾸고 리포에
+            연결했다. 인증 없이 `templates apply` 가 되는 것까지 확인
+- [ ] **ubuntu 재설계** (§3) ← **진행 중.** 브랜치 `ubuntu`
+      - [x] 상류 v3.0.0 재적용, prezto·도구 목록·메타데이터
+      - [x] 테스트 재작성 — 검사 18 개. `resolute`/`noble` 둘 다 18/18
+      - [ ] **발행** — `make prepare` 로 `2.0.0`. 발행된 `1.0.0` 의
+            `documentationURL` 이 `src/hello` 라 404 다
+- [ ] **CI 정비** (§5) — 그 다음
 
 ---
 
@@ -405,14 +410,24 @@ noble      sha256:cfd5dd36c0d0d88de01
 
 ### 3-2. 할 일
 
-- [ ] **도구 목록을 rohd 것 + `lsd` 로 맞춘다** (결정됨).
-      `bat` `fd-find` `ripgrep` `tig` `tldr` `xxd` `file` `lsd`.
-      **빠지는 것**: `vim-gtk3`, `bc` (apt 패키지), `git-lfs` (feature — 필요하면 그때 넣는다).
-      **더해지는 것**: `file`, `lsd`.
-      `lsd` 는 noble/jammy/resolute 모두 apt 에 있다 (`packages.ubuntu.com` 확인).
-      없는 배포판이면 apt-packages feature 가 빌드에서 실패하므로 조건이 자동으로 강제된다.
+- [x] ~~**도구 목록을 rohd 것 + `lsd` 로 맞춘다**~~ → 최종 7 개:
+      `bat` `lsd` `fd-find` `ripgrep` `tig` `xxd` `file`.
+      **뺀 것**: `vim-gtk3`, `bc`, `git-lfs`(feature). **더한 것**: `file`, `lsd`.
 
-- [ ] **prezto 를 넣는다** (결정됨). 그러면 fzf 배선을 `postCreateCommand` 에서
+      **`tldr` 은 결국 못 넣었다.** Haskell 클라이언트가 Rust 의 `tealdeer` 로 교체되면서
+      22.04 에는 `tldr`, 24.04 에는 둘 다, 26.04 에는 `tealdeer` 만 남았다. 세 배포판
+      모두에서 `tldr` 명령을 주는 패키지가 없다 (`tldr-py` 는 셋 다 있지만 명령이
+      `tldr-py`).
+
+      **여기 적어뒀던 "`lsd` 는 noble/jammy/resolute 모두 apt 에 있다"는 틀렸다.**
+      jammy 에는 없다 (`E: Unable to locate package lsd`). 그래서 `lsd` 를 살리고
+      **`jammy` 를 `proposals` 에서 뺐다** — 옵션 `description` 과 `NOTES.md` 도 같이.
+
+      "없는 배포판이면 빌드가 실패하므로 조건이 자동으로 강제된다"고도 적어뒀는데,
+      **아무도 그 조합을 빌드하지 않으면 강제되지 않는다.** 기본값을 `resolute` 로 올린
+      뒤에야 드러났다.
+
+- [x] ~~**prezto 를 넣는다**~~ 그러면 fzf 배선을 `postCreateCommand` 에서
       `extraZshrc` 로 옮겨야 한다 — prezto 가 `~/.zshrc` 를 자기 runcoms 로 심볼릭 링크하므로
       `>> ~/.zshrc` 는 **prezto 가 소유한 파일을 건드리는 것**이 된다. rohd 가 쓰는 값에는
       가드가 있어 fzf feature 를 빼도 셸이 안 깨진다:
@@ -421,20 +436,28 @@ noble      sha256:cfd5dd36c0d0d88de01
       **`common-utils` 도 같이 정리된다.** 지금 ubuntu 는 그걸로 zsh 를 깔고 로그인 셸을
       바꾸는데, prezto 가 그 일을 대신한다. rohd 의 주석이 근거다 —
       base 이미지가 이미 `vscode` 유저·sudo·zsh 를 갖고 있어서 feature 로 나열할 필요가 없다.
-- [ ] **상류 재적용** → 피쳐 블록 이식 → `${templateOption:imageVariant}` 복원
-- [ ] **`name` / `description` / `publisher`.** 지금은 `"My ubuntu dev container"` /
-      `"...with some useful tools"` 로 아무 정보가 없다. **발행 메타데이터라 VS Code 템플릿
-      목록과 에디터 hover, 생성 README 첫 줄에 뜬다.** 상류에는 `publisher` 필드가 있는데
-      우리 것엔 없다.
-- [ ] **테스트를 목표 동작에 맞춰 새로 쓴다.** 순서: 목표 테스트 작성 → **RED**(아직 재설계 전) →
-      재설계 → **GREEN**. §1-2 에서 `distro` 체크를 먼저 고쳐두는 이유가 이것이다 —
-      항상 통과하는 체크를 두고는 재설계가 됐는지 잴 수 없다.
-      담을 것: zsh 로그인 셸, oh-my-zsh 부재(prezto 로 가면 무의미), fzf 실동작
-      (`bindkey "^R"` → `fzf-history-widget`), 도구를 `which` 말고 실행해서 검증
-      (`git lfs version`, `gh --version`), 옵션 조합(jammy 등).
-- [ ] **도구 목록 이중 관리 해소.** devcontainer.json 의 `packages` 와 test.sh 의
-      `REQUIRED_TOOLS` 가 따로 놀고 `vim-gtk3 → vim/gvim`, `bat → batcat`,
-      `fd-find → fdfind` 매핑이 암묵적이다.
+- [x] ~~**상류 재적용** → 피쳐 블록 이식 → `${templateOption:imageVariant}` 복원~~
+      상류 파일 둘을 그대로 덮고 나서 고쳤다. `image` 가 `base:noble` 로 하드코딩돼 있어
+      **옵션이 아무 데도 안 쓰이던 것**이 이때 드러났다.
+
+- [x] ~~**`name` / `description` / `publisher`**~~ → `Ubuntu` / prezto·fzf·gh·유틸리티를
+      나열하는 한 줄 / `congealer`. `optionalPaths` 는 §3-0 결정대로 안 가져왔다.
+
+- [x] ~~**테스트를 목표 동작에 맞춰 새로 쓴다**~~ → 검사 3 개에서 18 개로.
+      RED→GREEN 순서는 못 지켰다 (재설계를 먼저 해버렸다).
+
+      **`which` 말고 실행하라고 적어뒀던 건 뒤집었다.** 배포판 저장소의 apt 패키지는
+      의존성이 풀려 설치된 것이라 실행이 더 잡아주는 게 없고, 도구마다 버전 플래그를
+      명시해야 해서 값에 비해 번잡하다. 실제로 잡고 싶은 `bat`→`batcat` 류의 이름
+      어긋남은 `command -v` 로 충분하다. rohd 의 `dart --version` 은 사정이 달랐다 —
+      tarball 을 root 가 깔아서 remote 유저 PATH 가 진짜 위험이었다.
+
+      **oh-my-zsh 는 "부재" 가 아니라 "소유권" 을 본다.** 베이스 이미지가 깔아둔 것이
+      디스크에 그대로 남으므로, `~/.zshrc` 가 prezto 를 가리키는지를 검사한다.
+
+- [x] ~~**도구 목록 이중 관리 해소**~~ → 목록은 `devcontainer.json` 에만 두고, test.sh 는
+      패키지→명령 매핑만 갖는다. 둘이 어긋나면 검사가 실패한다. 목록에 `jq` 를 끼워넣어
+      RED 가 나는 것까지 확인했다.
 - [ ] **재발행.** `documentationURL` 이 **이미 발행된 아티팩트에 잘못 박혀 있다**:
 
       ```

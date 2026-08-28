@@ -239,8 +239,6 @@ reportResults
         [ "$(lsb_release -cs)" = "${TEMPLATE_OPTION_imageVariant}" ]
   ```
 
-- **`which` 로 끝내지 마세요.** 바이너리가 있어도 초기화가 안 됐을 수 있습니다.
-  `gh --version` 처럼 실제로 실행해 보는 편이 낫습니다.
 - **실행 유저는 `remoteUser` 입니다** (보통 `vscode`). root 가 아니므로 권한이 필요한 검사는
   `sudo` 를 붙여야 합니다.
 - **`test/<id>/` 안의 파일은 전부 컨테이너로 복사됩니다.** 그래서 검사가 길어지면
@@ -336,3 +334,44 @@ action 이 하는 일은 위의 두 스크립트를 순서대로 실행하는 �
 
 같은 PR 에 연달아 푸시하면 앞선 실행은 `concurrency` 로 취소됩니다. 템플릿마다 컨테이너를
 빌드하는 만큼 그냥 두면 비쌉니다.
+
+## 트러블슈팅
+
+### 빌드가 `content ... not found` / `parent snapshot ... does not exist` 로 죽는다
+
+**템플릿 문제가 아닙니다.** 실패가 **어디서** 났는지로 갈립니다.
+
+| 실패 지점 | 판정 |
+|---|---|
+| feature 의 설치 스크립트 안 — `apt install ... Return Code: 100` 같은 | 템플릿이 틀렸다 |
+| `exporting to image` / `unpacking` / 스냅샷 단계 | 저장소가 상했다 |
+
+아래쪽이면 이런 문구가 나옵니다.
+
+```
+failed to extract layer sha256:... : failed to get reader from content store:
+  content digest sha256:...: not found
+
+failed to solve: parent snapshot ... does not exist
+```
+
+**처방은 한 줄입니다.**
+
+```bash
+docker builder prune -af
+```
+
+시간을 아끼는 두 가지:
+
+- **재시도로는 안 낫습니다.** 아무것도 바꾸지 않고 다시 돌리면 **같은 다이제스트로** 똑같이
+  죽습니다. 그 결정성이 일시적 장애와 구분되는 지점이고, 하네스에 재시도가 없는 이유입니다
+- **이미지를 지워도 안 낫습니다.** 상한 기록은 빌드 캐시에 있어서, 이미지를 지워도 buildkit
+  이 그 캐시로 같은 결과물을 다시 조립합니다
+
+호스트나 개발 컨테이너가 **재시작한 뒤**에 나타났습니다. `/var/lib/docker` 는 호스트 볼륨이라
+재시작을 견디는데 dockerd 는 깨끗하게 내려갈 기회가 없어서, 새 dockerd 가 중간에 끊긴
+저장소를 그대로 읽습니다. **재시작할 때마다 나지는 않습니다** — 직전까지 빌드 중이었을 때만
+봤습니다. 그래서 미리 비우지 말고 위 증상이 나오면 비우세요.
+
+**CI 에는 해당 없습니다.** 러너는 job 마다 빈 상태로 시작해서 재사용할 캐시가 없습니다.
+`actions/cache` 나 buildx 캐시를 붙이면 이 실패 모드를 CI 로 들여오게 됩니다.

@@ -4,5 +4,6 @@
 !.vscode
 
 *.log
+__pycache__/
 
 rohd-dev

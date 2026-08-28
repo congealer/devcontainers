@@ -1,16 +1,27 @@
 // More info: https://containers.dev/implementors/json_reference/
 {
-	"image": "mcr.microsoft.com/devcontainers/javascript-node:1-18-bullseye",
+	"image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+
 	"features": {
-		"ghcr.io/devcontainers/features/docker-in-docker:2": {}
+		"ghcr.io/devcontainers/features/docker-in-docker:4": {},
+		"ghcr.io/devcontainers-extra/features/devcontainers-cli:1": {},
+		"ghcr.io/devcontainers/features/github-cli:1": {},
+		"ghcr.io/devcontainers/features/python:1": {
+			"installTools": false
+		}
 	},
+
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"mads-hartmann.bash-ide-vscode",
-				"dbaeumer.vscode-eslint"
+				"mads-hartmann.bash-ide-vscode"
 			]
 		}
 	},
-	"postCreateCommand": "npm install -g @devcontainers/cli"
+
+	// "remoteUser": "vscode",
+
+	// base:ubuntu ships Python 3.12, which marks the system environment as
+	// externally managed (PEP 668), so pip refuses without this flag.
+	"postCreateCommand": "pip install --break-system-packages questionary"
 }

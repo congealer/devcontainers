@@ -1,14 +1,3 @@
-
-# My ubuntu dev container (ubuntu)
-
-My ubuntu dev container with some useful tools
-
-## Options
-
-| Options Id | Description | Type | Default Value |
-|-----|-----|-----|-----|
-| imageVariant | Ubuntu version (Nobel: v24.04.2 LTS, Jammy: v22.04.5 LTS, or Focal: v20.04.6 LTS) | string | noble |
-
 ## Publish
 
 템플릿을 ghcr.io에 퍼블리시하려면:
@@ -30,8 +19,3 @@ devcontainer templates apply -t ghcr.io/congealer/devcontainers/ubuntu --workspa
 ```bash
 devcontainer templates apply -t ghcr.io/congealer/devcontainers/ubuntu -a '{"imageVariant": "noble"}' --workspace-folder <my-project>
 ```
-
-
----
-
-_Note: This file was auto-generated from the [devcontainer-template.json](https://github.com/congealer/devcontainers/blob/main/src/ubuntu/devcontainer-template.json).  Add additional notes to a `NOTES.md`._

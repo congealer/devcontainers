@@ -12,6 +12,7 @@
 각 템플릿의 **상세한 설명과 옵션 정보**는 `src/<template-name>/README.md` 파일을 참조하세요.
 
 - **ubuntu**: 기본 Ubuntu 환경에 유용한 도구들이 미리 설치된 템플릿
+- **rohd**: ROHD로 하드웨어를 설계하기 위한 Dart 환경 템플릿
 
 ### 템플릿 적용 (Apply)
 
@@ -38,21 +39,13 @@ devcontainer templates apply \
 
 사용 가능한 전체 옵션 목록과 설명은 해당 템플릿의 `README.md` (`src/<template-name>/README.md`)를 확인하시기 바랍니다.
 
-## Testing Templates
+## 템플릿 개발
 
-이 항목은 템플릿 개발자를 위한 내용입니다.
-
-### Running Tests
-
-로컬에서 템플릿을 수정하고 테스트하려면 repo에 포함된 스크립트를 사용합니다.
+이 저장소의 템플릿을 고치거나 새로 추가하려면 [dev.md](dev.md)를 보세요. 테스트 하네스,
+문서 생성 규칙, 릴리스 절차가 거기에 있습니다.
 
 ```bash
-# 1. 템플릿 빌드 (Docker 이미지 빌드)
-./.github/actions/smoke-test/build.sh ubuntu
-
-# 2. 테스트 실행
-./.github/actions/smoke-test/test.sh ubuntu
+make            # 타깃 목록
+make test       # 모든 템플릿을 빌드하고 테스트
+make test-rohd  # 하나만
 ```
-
-각 템플릿의 테스트 코드는 `test/<template-id>/test.sh`에 위치합니다.
-테스트는 `devcontainer up`을 통해 컨테이너를 실행하고, 정의된 검증 스크립트를 수행하는 방식으로 동작합니다.

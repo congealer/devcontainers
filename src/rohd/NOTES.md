@@ -33,6 +33,17 @@ devcontainer templates apply \
   --template-args '{"projectName":"my_design","dartVersion":"3.13.2"}'
 ```
 
+**`projectName` 은 `lowercase_with_underscores` 여야 합니다.** 그대로 Dart 패키지 이름이
+되기 때문입니다. 하이픈을 넣으면 적용은 되지만 컨테이너를 띄울 때 `pub get` 이 이렇게
+실패합니다:
+
+```
+Error on line 1, column 7 of pubspec.yaml: "name" field must be a valid Dart identifier.
+```
+
+디렉터리 이름까지 맞출 필요는 없습니다 — `rohd-practice/` 안에 `rohd_practice` 패키지여도
+됩니다.
+
 VS Code 에서는 명령 팔레트의 **Dev Containers: New Dev Container...** 로도 됩니다.
 
 만들어진 프로젝트를 쓰는 방법은 `docs/rohd.md` 에 있습니다 — 이 파일과 `README.md` 는

@@ -5,6 +5,11 @@ Pick the templates, pick a level for each, and the new version is written into
 devcontainer-template.json and the docs regenerated. It stops there: the version
 is what decides whether 'make release' uploads anything, so the diff is left to
 be read and committed rather than done for you.
+
+`--check` runs the same judgement without any of that, and without questionary:
+it reports the templates that moved on since their version was committed and
+exits 1 if there are any. 'make release' goes through it, so publishing what
+would silently have been skipped is not possible.
 """
 
 import json
@@ -12,11 +17,6 @@ import subprocess
 import sys
 from collections import OrderedDict
 from pathlib import Path
-
-try:
-    import questionary
-except ImportError:
-    sys.exit("questionary is not installed - rebuild the dev container")
 
 ROOT = Path(__file__).resolve().parent
 
@@ -78,15 +78,42 @@ def write_version(template, version):
     path.write_text(json.dumps(data, indent=4, ensure_ascii=False) + "\n")
 
 
-def main():
-    templates = sorted(d.name for d in (ROOT / "src").iterdir() if d.is_dir())
-    if not templates:
+def templates():
+    found = sorted(d.name for d in (ROOT / "src").iterdir() if d.is_dir())
+    if not found:
         sys.exit("no templates under src/")
+    return found
+
+
+def check():
+    """Refuse a release that would publish nothing for a changed template.
+
+    The CLI skips a version it has already published -- no request, no error,
+    exit code 0 -- so 'fixed it and released' can leave the registry untouched.
+    Worse, the collection metadata is rebuilt from src/ every time regardless,
+    so the listing advertises the new metadata while the artifact stays old.
+    """
+    stale = [(t, current_version(t)) for t in templates()
+             if state(t, current_version(t)) == "changed"]
+    if not stale:
+        return 0
+
+    for t, version in stale:
+        print(f"  {t}: changed since {version} was committed")
+    print("\nRun 'make prepare' to bump, commit, then release.")
+    return 1
+
+
+def main():
+    try:
+        import questionary
+    except ImportError:
+        sys.exit("questionary is not installed - rebuild the dev container")
 
     # Pre-checked is the point: the ones carrying changes are the ones that
     # have to go up, and a release that misses one is the failure worth avoiding.
     choices = []
-    for t in templates:
+    for t in templates():
         version = current_version(t)
         note = state(t, version)
         choices.append(
@@ -134,4 +161,8 @@ def main():
 
 
 if __name__ == "__main__":
+    if sys.argv[1:] == ["--check"]:
+        sys.exit(check())
+    elif sys.argv[1:]:
+        sys.exit(f"usage: {sys.argv[0]} [--check]")
     main()

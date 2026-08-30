@@ -42,7 +42,7 @@ make test-rohd  KEEP=1
 이 사라진 이미지를 참조하는 스냅샷을 붙들고 있어, 다음 빌드가
 `parent snapshot ... does not exist` 로 죽습니다.
 
-`clean` 의 구현은 [build.sh](.github/actions/smoke-test/build.sh) 안에 있습니다
+`clean` 의 구현은 [build.sh](script/build.sh) 안에 있습니다
 (`build.sh clean [<id>]`). 이미지 이름이 `vsc-<id>-<해시>-features` 인 것은 `build.sh` 가
 작업 폴더를 `/tmp/<id>` 로 정하기 때문이라, 그 이름 규칙을 아는 쪽이 지우는 것도 맡습니다.
 
@@ -53,8 +53,8 @@ make test-rohd  KEEP=1
 저장소가 직접 갖고 있는 스크립트 두 개로 돌아갑니다. `make` 는 그 둘을 부를 뿐입니다.
 
 ```bash
-./.github/actions/smoke-test/build.sh ubuntu   # 컨테이너를 만든다
-./.github/actions/smoke-test/test.sh  ubuntu   # 그 안에서 테스트를 돌리고 치운다
+./script/build.sh ubuntu   # 컨테이너를 만든다
+./script/test.sh  ubuntu   # 그 안에서 테스트를 돌리고 치운다
 ```
 
 `build.sh` 가 `src/<id>` 와 `test/<id>` 를 상대 경로로 찾으므로 **반드시 저장소 루트에서**
@@ -103,7 +103,7 @@ reportResults (exit 1)  →  test-project/test.sh  →  devcontainer exec  →  
 `TEMPLATE_ARGS` 로 덮어씁니다 — `devcontainer templates apply -a` 와 같은 JSON 형태입니다.
 
 ```bash
-TEMPLATE_ARGS='{"imageVariant":"jammy"}' ./.github/actions/smoke-test/build.sh ubuntu
+TEMPLATE_ARGS='{"imageVariant":"jammy"}' ./script/build.sh ubuntu
 ```
 
 JSON 이 잘못됐으면 조용히 기본값으로 떨어지지 않고 **거부합니다.** 덮어쓴 줄 알았는데 안
@@ -148,7 +148,7 @@ trap cleanup EXIT
 수 없습니다. `KEEP=1` 이 그 탈출구입니다.
 
 ```bash
-KEEP=1 ./.github/actions/smoke-test/test.sh ubuntu
+KEEP=1 ./script/test.sh ubuntu
 ```
 
 남겨두면 다시 붙을 수 있습니다 (스크립트가 이 명령을 출력해 줍니다):
@@ -239,8 +239,6 @@ reportResults
         [ "$(lsb_release -cs)" = "${TEMPLATE_OPTION_imageVariant}" ]
   ```
 
-- **`which` 로 끝내지 마세요.** 바이너리가 있어도 초기화가 안 됐을 수 있습니다.
-  `gh --version` 처럼 실제로 실행해 보는 편이 낫습니다.
 - **실행 유저는 `remoteUser` 입니다** (보통 `vscode`). root 가 아니므로 권한이 필요한 검사는
   `sudo` 를 붙여야 합니다.
 - **`test/<id>/` 안의 파일은 전부 컨테이너로 복사됩니다.** 그래서 검사가 길어지면
@@ -294,8 +292,21 @@ make release     # GHCR 에 발행
 
 올리기 전에 알아야 할 것들:
 
-- **`version` 이 발행 여부를 정하는 유일한 스위치입니다.** 이미 발행된 버전은 CLI 가
-  건너뛰므로, 안 올리면 **조용히 아무 일도 일어나지 않습니다.** 에러도 안 납니다
+- **`version` 이 발행 여부를 정하는 유일한 스위치입니다.** 이미 발행된 버전이면 CLI 가
+  그 템플릿을 건너뜁니다. **덮어쓰는 게 아니라 요청 자체를 안 보내고, 종료 코드는 0 입니다.**
+  경고 한 줄만 나오니 그것만이 단서입니다:
+
+  ```
+  (!) WARNING: Version 1.0.0 already exists, skipping 1.0.0...
+  ```
+
+  **그런데 컬렉션 메타데이터는 버전 검사 없이 매번 다시 올라갑니다.** 그래서 패키지 페이지에
+  "방금 발행됨" 이 떠도 템플릿이 올라갔다는 뜻이 아니고, 소스만 고치고 버전을 안 올리면
+  **컬렉션은 새 메타데이터를, 템플릿 아티팩트는 옛 것을** 갖게 됩니다. 확인은 이렇게 합니다:
+
+  ```bash
+  devcontainer templates metadata ghcr.io/congealer/devcontainers/ubuntu
+  ```
 - **태그가 움직입니다.** `1.3.0` 을 올리면 `1.3.0`/`1.3`/`1`/`latest` 가 함께 올라가는데
   `1` 과 `latest` 는 **기존 것에서 옮겨옵니다.** `:1` 로 고정한 사용자가 다음 빌드에서 바로
   받으므로, 올리기 전에 `make test` 가 통과했는지 확인하세요
@@ -310,22 +321,23 @@ make release     # GHCR 에 발행
 
 ## CI
 
-> **아래는 목표 형상입니다. 아직 그렇게 돼 있지 않습니다.** 지금 `test-pr.yaml` 의
-> paths-filter 에는 없어진 템플릿 이름만 남아 매트릭스가 비고, `continue-on-error` 때문에
-> 실패해도 초록으로 뜹니다. 그때까지 검증은 로컬 `make test` 로 합니다.
+`.github/workflows/test-pr.yaml` 이 PR 과 main 푸시에서 돕니다.
 
 ```
 test-pr.yaml
   ├ templates      ls src 로 템플릿 목록을 만든다
   ├ test           매트릭스: 템플릿마다
-  │   └ .github/actions/smoke-test        (composite)
-  │       ├ build.sh <id>
-  │       └ test.sh  <id>
+  │   ├ npm install -g @devcontainers/cli
+  │   └ make test-<id>  →  script/build.sh  →  script/test.sh
   └ ci             집계 — 위가 하나라도 실패하면 실패
 ```
 
-action 이 하는 일은 위의 두 스크립트를 순서대로 실행하는 것뿐입니다. **CI 와 로컬이 같은
-경로를 타므로**, 로컬에서 통과한 것이 CI 에서만 다르게 도는 일이 없습니다.
+**CI 는 `make` 를 부릅니다.** 로컬에서 치는 것과 같은 명령이라, "템플릿 X 를 테스트한다"의
+정의가 Makefile 한 곳에만 있습니다. 스크립트를 직접 부르면 호출 규격이 바뀔 때마다 양쪽을
+고쳐야 하고, `test-%` 가 `build-%` 를 의존한다는 것도 워크플로에 다시 써야 합니다.
+
+**CLI 는 워크플로가 깝니다.** 러너에는 없고, `build.sh` 는 일부러 설치하지 않습니다 — 개발
+컨테이너는 CLI 를 feature 로 받는데 거기서 root 소유로 한 번 더 설치하면 충돌합니다.
 
 **템플릿 목록은 `ls src` 로 저장소에서 읽습니다.** 손으로 관리하는 목록이 없다는 뜻이고,
 `src/` 에 템플릿을 추가하면 그것만으로 CI 에 들어옵니다. 목록에 적어넣는 걸 잊어서 새
@@ -334,5 +346,65 @@ action 이 하는 일은 위의 두 스크립트를 순서대로 실행하는 �
 **`ci` job 은 이름이 매트릭스와 무관하게 고정된 집계 체크입니다.** 템플릿이 늘어도 이름이
 바뀌지 않으므로 branch ruleset 에는 이것 하나만 걸면 됩니다.
 
-같은 PR 에 연달아 푸시하면 앞선 실행은 `concurrency` 로 취소됩니다. 템플릿마다 컨테이너를
-빌드하는 만큼 그냥 두면 비쌉니다.
+같은 브랜치에 연달아 푸시하면 앞선 실행은 `cancel-in-progress` 로 취소됩니다. 템플릿마다
+컨테이너를 빌드하는 만큼 그냥 두면 비쌉니다. `release.yaml` 에는 넣지 않았습니다 — 발행이
+중간에 잘리면 안 됩니다.
+
+## 트러블슈팅
+
+### 빌드가 `content ... not found` / `parent snapshot ... does not exist` 로 죽는다
+
+**템플릿 문제가 아닙니다.** 실패가 **어디서** 났는지로 갈립니다.
+
+| 실패 지점 | 판정 |
+|---|---|
+| feature 의 설치 스크립트 안 — `apt install ... Return Code: 100` 같은 | 템플릿이 틀렸다 |
+| `exporting to image` / `unpacking` / 스냅샷 단계 | 저장소가 상했다 |
+
+아래쪽이면 이런 문구가 나옵니다.
+
+```
+failed to extract layer sha256:... : failed to get reader from content store:
+  content digest sha256:...: not found
+
+failed to solve: parent snapshot ... does not exist
+```
+
+**처방은 `make clean` 입니다.** 마지막에 빌드 캐시를 비우는 것이 핵심이고, 같이 지워지는
+이미지는 어차피 캐시 없이 다시 만들어야 하므로 잃는 게 없습니다. 베이스 이미지는 남습니다.
+
+```bash
+make clean            # 전부
+make clean-rohd       # 한 템플릿. 캐시 정리는 어느 쪽이든 전체에 걸립니다
+```
+
+시간을 아끼는 두 가지:
+
+- **재시도로는 안 낫습니다.** 아무것도 바꾸지 않고 다시 돌리면 **같은 다이제스트로** 똑같이
+  죽습니다. 그 결정성이 일시적 장애와 구분되는 지점이고, 하네스에 재시도가 없는 이유입니다
+- **이미지만 지워도 안 낫습니다.** 상한 기록은 빌드 캐시에 있어서, 이미지를 지워도 buildkit
+  이 그 캐시로 같은 결과물을 다시 조립합니다
+
+**무엇이 캐시를 상하게 하는지는 모릅니다.** 이틀에 두 번 났고 다이제스트는 매번 달랐습니다.
+재시작과 엮어 보려 했지만 두 번째는 32시간 연속 가동 중에 났습니다. 미리 비울 근거가 없으니
+위 증상이 나오면 그때 비우세요.
+
+### 빌드가 끝나지 않는다
+
+lifecycle 명령이 **실패가 아니라 정지**할 수 있습니다. 실제로 `dart pub get` 이 pub.dev 와
+연결은 맺힌 채 데이터가 오지 않아 두 시간을 기다린 적이 있습니다 — 그 사이 CPU 는 0%,
+네트워크는 멀쩡했습니다. `dart pub get` 에는 타임아웃이 없고, 환경 변수도 `PUB_CACHE` 와
+`PUB_HOSTED_URL` 뿐이라 밖에서 끊는 수밖에 없습니다.
+
+정상이라면 템플릿당 **1~2분**입니다. 그보다 한참 넘어가면 멈춘 것이니 이렇게 확인하세요.
+
+```bash
+ps -eo etime,cmd | grep -E "devcontainer up|dart pub"   # 얼마나 됐나
+docker exec <컨테이너> ps -eo stat,pcpu,comm             # CPU 0% 면 정지
+```
+
+`Ctrl-C` 로 끊고 남은 컨테이너를 지운 뒤 다시 돌리면 됩니다. CI 는 job 에
+`timeout-minutes: 15` 가 걸려 있어 저절로 끊깁니다.
+
+**CI 에는 해당 없습니다.** 러너는 job 마다 빈 상태로 시작해서 재사용할 캐시가 없습니다.
+`actions/cache` 나 buildx 캐시를 붙이면 이 실패 모드를 CI 로 들여오게 됩니다.

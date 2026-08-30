@@ -1,6 +1,6 @@
 {
     "id": "rohd",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "name": "ROHD (Rapid Open Hardware Development)",
     "description": "A ROHD hardware design project: a pinned Dart SDK, a transaction-level testbench, reproducible SystemVerilog output, and workarounds for the ROHD gaps you would otherwise hit on day one.",
     "documentationURL": "https://github.com/congealer/devcontainers/tree/main/src/rohd",

@@ -1,6 +1,6 @@
 {
     "id": "ubuntu",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "name": "Ubuntu",
     "description": "An Ubuntu container with zsh under prezto, fzf history search, the GitHub CLI and a set of everyday command-line tools.",
     "documentationURL": "https://github.com/congealer/devcontainers/tree/main/src/ubuntu",
@@ -17,5 +17,7 @@
             "default": "resolute"
         }
     },
-    "platforms": ["Any"]
+    "platforms": [
+        "Any"
+    ]
 }

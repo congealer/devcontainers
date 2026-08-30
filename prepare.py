@@ -85,22 +85,45 @@ def templates():
     return found
 
 
-def check():
-    """Refuse a release that would publish nothing for a changed template.
+# What to do about each state state() can report. The empty string is the one
+# that is not a problem, so anything state() names at all stops the release.
+REMEDY = {
+    "changed": "bump it: 'make prepare'",
+    "bumped, uncommitted": "commit it -- publishing an uncommitted version"
+                           " leaves nothing in git that reproduces it",
+    "version never committed": "commit it, or check the clone has full history"
+                               " (release.yaml needs fetch-depth: 0)",
+}
 
-    The CLI skips a version it has already published -- no request, no error,
-    exit code 0 -- so 'fixed it and released' can leave the registry untouched.
-    Worse, the collection metadata is rebuilt from src/ every time regardless,
-    so the listing advertises the new metadata while the artifact stays old.
+
+def check():
+    """Refuse a release that would not put the working tree in the registry.
+
+    Two ways that happens. A version already published is skipped by the CLI --
+    no request, no error, exit code 0 -- so 'fixed it and released' can leave
+    the registry untouched; and the collection metadata is rebuilt from src/
+    every time regardless, so the listing advertises the new metadata while the
+    artifact stays old. A version that was never committed publishes fine but
+    no commit records it, so nothing can be checked out to reproduce it.
     """
-    stale = [(t, current_version(t)) for t in templates()
-             if state(t, current_version(t)) == "changed"]
+    # state() reads history, and a shallow clone has none: git then treats the
+    # one commit it has as introducing every file, so the version always looks
+    # freshly set and nothing can come after it. The verdict is a clean tree
+    # whatever the source says -- the check does not fail, it stops meaning
+    # anything. Refuse rather than answer from a history that is not there.
+    if git("rev-parse", "--is-shallow-repository") == "true":
+        print("  shallow clone -- release-check needs history to judge anything")
+        print("      -> clone in full, or set fetch-depth: 0 on the checkout")
+        return 1
+
+    stale = [(t, current_version(t), s) for t in templates()
+             if (s := state(t, current_version(t)))]
     if not stale:
         return 0
 
-    for t, version in stale:
-        print(f"  {t}: changed since {version} was committed")
-    print("\nRun 'make prepare' to bump, commit, then release.")
+    for template, version, situation in stale:
+        print(f"  {template} ({version}): {situation}")
+        print(f"      -> {REMEDY.get(situation, situation)}")
     return 1
 
 

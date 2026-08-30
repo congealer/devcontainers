@@ -54,10 +54,11 @@
       - [x] 테스트 재작성 — 검사 18 개. `resolute`/`noble` 둘 다 18/18
       - [ ] **발행** — `make prepare` 로 `2.0.0`. 발행된 `1.0.0` 의
             `documentationURL` 이 `src/hello` 라 404 다
-- [ ] **CI 정비** (§5)
+- [x] **CI 정비** (§5) — 완료
       - [x] §5-1 테스트 워크플로 — 다시 씀. `make test` 29/29 통과
       - [x] `release.yaml` — 주석 두 곳, `generate-docs` 는 계속 끔
-      - [ ] 릴리스 사전 점검 (`prepare.py --check` + `make release` 가 거치게)
+      - [x] 릴리스 사전 점검 — `prepare.py --check`, `release: release-check`,
+            `release.yaml` 도 `make release` 를 부른다
 
 ---
 
@@ -685,7 +686,7 @@ _Note: This file was auto-generated from the [devcontainer-template.json](https:
       상류 전례도 반대쪽이다 — `validate.yml` 은 **feature-starter 에만** 있고
       `template-starter` 와 `devcontainers/templates` 에는 없다. devcon-features 가 갖고
       있는 건 거기서 출발했기 때문이다.
-- [ ] **릴리스 사전 점검** (결정됨). `prepare.py` 에 `--check` 를 붙이고 `make release` 가
+- [x] ~~**릴리스 사전 점검**~~ → 넣었다. `prepare.py` 에 `--check` 를 붙이고 `make release` 가
       발행 전에 거치게 한다. `changed` 인 템플릿이 있으면 종료 코드 1 로 멈춘다.
       판정은 `state()` 를 그대로 쓴다 — "버전이 박힌 커밋 이후 `src/<id>` 가 바뀌었는가".
 

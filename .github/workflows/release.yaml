@@ -17,17 +17,24 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v4
-
-      - name: "Publish Templates"
-        uses: devcontainers/action@v1
+      # Fetched in full: release-check reads the history to tell whether a
+      # template moved on since its version was committed.
+      - uses: actions/checkout@v7
         with:
-          publish-templates: "true"
-          base-path-to-templates: "./src"
-          # README.md under src/<id> is generated, but `make prepare` already
-          # runs `make docs` before the version is committed, so it is current
-          # by the time anything is published. Regenerating here would only
-          # produce a diff nobody commits back.
-          generate-docs: "false"
+          fetch-depth: 0
+
+      - name: "Install latest devcontainer CLI"
+        run: npm install -g @devcontainers/cli
+
+      # `make release` rather than devcontainers/action@v1, which wraps the same
+      # CLI: one publish path, and it goes through release-check. gh is
+      # preinstalled on the runner and reads GH_TOKEN, so `gh auth token` in the
+      # target works without a login step.
+      #
+      # generate-docs has no equivalent here and needs none -- `make prepare`
+      # regenerates the README before the version is committed, so it is already
+      # current by the time anything is published.
+      - name: "Publish templates"
+        run: make release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

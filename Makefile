@@ -23,7 +23,7 @@ $(if $(filter $(1),$(TEMPLATES)),,\
 endef
 
 .DEFAULT_GOAL := help
-.PHONY: help build test prepare docs release clean distclean
+.PHONY: help build test prepare release-check docs release clean distclean
 
 # build-% is a prerequisite of test-%, so make would treat it as an
 # intermediate file and try to delete it afterwards. Nothing of that name
@@ -66,11 +66,14 @@ build-%:  ## One template: render it and bring the container up
 test-%: build-%  ## One template: run its test.sh in the container, then tear down
 	$(TEST) $*
 
-# '-p' wants the project root, the folder holding src/ and test/ -- unlike the
-# Features equivalent, which wants the folder the Features live in. There is no
-# --namespace here either; owner and repo are separate flags.
 prepare:  ## Pick a template and bump its version, then refresh the docs
 	@./prepare.py
+
+# A prerequisite of release rather than advice in a comment: publishing a
+# template whose version is already up there is a no-op the CLI reports with a
+# warning and exit code 0, so nothing else would catch it.
+release-check:  ## Fail if a template changed since its version was committed
+	@./prepare.py --check
 
 # '-p' wants the folder the templates live in, despite the help text calling it
 # the project root that holds src/ and test/. Given '.' it walks every child of
@@ -82,10 +85,11 @@ docs:  ## Regenerate every src/<template>/README.md from its metadata and NOTES.
 	    --github-owner $(word 1,$(subst /, ,$(NAMESPACE))) \
 	    --github-repo $(word 2,$(subst /, ,$(NAMESPACE)))
 
-# Publishes with your own credentials rather than through the release workflow.
-# A version that is already published is skipped, so this uploads whatever
-# template had its version bumped and nothing else.
-release:  ## Publish every template under src/ to the registry
+# Publishes with your own credentials when run locally; the release workflow
+# runs this same target so both paths go through release-check. A version that
+# is already published is skipped, so this uploads whatever template had its
+# version bumped and nothing else.
+release: release-check  ## Publish every template under src/ to the registry
 	@gh auth status > /dev/null 2>&1 \
 	    || { echo "gh is not logged in - run 'gh auth login'"; exit 1; }
 	GITHUB_TOKEN=$$(gh auth token) $(DEVCONTAINER) templates publish \

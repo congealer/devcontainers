@@ -1,10 +1,10 @@
-# Wrapper around the smoke-test scripts and the devcontainer CLI.
+# Wrapper around the scripts under script/ and the devcontainer CLI.
 #
 # There is no `devcontainer templates test` subcommand -- that exists only for
 # Features -- so testing a template means building a container from it and
-# running the template's own test.sh inside. The two scripts under
-# .github/actions/smoke-test do that; this file only calls them, so a local run
-# and a CI run take the same path.
+# running the template's own test.sh inside. The two scripts under script/ do
+# that; this file only calls them, and CI calls this file, so a local run and a
+# CI run take the same path.
 
 NAMESPACE    ?= congealer/devcontainers
 REGISTRY     ?= ghcr.io
@@ -12,8 +12,8 @@ DEVCONTAINER ?= devcontainer
 
 TEMPLATES := $(notdir $(wildcard src/*))
 
-BUILD := ./.github/actions/smoke-test/build.sh
-TEST  := ./.github/actions/smoke-test/test.sh
+BUILD := ./script/build.sh
+TEST  := ./script/test.sh
 
 # Catch a mistyped template id here rather than letting cp fail on it further
 # down, where the error says nothing about what was actually wrong.
@@ -35,11 +35,20 @@ help:  ## Show this help
 	@echo
 	@echo "templates: $(TEMPLATES)"
 
+# A failing template does not stop the loop -- one broken template should not
+# hide the state of the others -- but it does have to reach the exit code. A
+# bare `for` would report the status of the last template only, so `make test`
+# would come back green with an earlier one failing. CI does not rely on this:
+# its matrix calls test-<id> per job.
 build:  ## Build a container for every template under src/
-	@for t in $(TEMPLATES) ; do $(MAKE) --no-print-directory build-$$t ; done
+	@rc=0 ; for t in $(TEMPLATES) ; do \
+	    $(MAKE) --no-print-directory build-$$t || rc=1 ; \
+	done ; exit $$rc
 
 test:  ## Build and test every template under src/
-	@for t in $(TEMPLATES) ; do $(MAKE) --no-print-directory test-$$t ; done
+	@rc=0 ; for t in $(TEMPLATES) ; do \
+	    $(MAKE) --no-print-directory test-$$t || rc=1 ; \
+	done ; exit $$rc
 
 # Option values default to each option's `default`. Override them the way
 # `devcontainer templates apply -a` takes them:

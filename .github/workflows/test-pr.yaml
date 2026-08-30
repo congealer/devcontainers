@@ -1,32 +1,69 @@
 name: "CI - Test Templates"
+
 on:
+  push:
+    branches:
+      - main
   pull_request:
+  workflow_dispatch:
+
+# Each matrix job builds a whole dev container, so letting superseded runs
+# finish is expensive. Nothing here publishes, so cancelling is safe.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  detect-changes:
+  # The template list is read from the repository rather than written out here,
+  # so that adding a template cannot leave it untested.
+  templates:
     runs-on: ubuntu-latest
     outputs:
-      templates: ${{ steps.filter.outputs.changes }}
+      all: ${{ steps.list.outputs.all }}
     steps:
-      - uses: dorny/paths-filter@v2
-        id: filter
-        with:
-          filters: |
-            color: ./**/color/**
-            hello: ./**/hello/**
+      - uses: actions/checkout@v7
+
+      - id: list
+        name: "Collect the templates to test"
+        run: |
+          all=$(ls src | jq -R . | jq -sc .)
+          echo "all: $all"
+          echo "all=$all" >> "$GITHUB_OUTPUT"
 
   test:
-    needs: [detect-changes]
+    needs: templates
     runs-on: ubuntu-latest
-    continue-on-error: true
+    # A template takes 1-2 minutes locally and 3-5 on a runner, which has no
+    # base image cached. The ceiling is here because a lifecycle command can
+    # hang rather than fail -- `dart pub get` has no timeout of its own and was
+    # seen waiting two hours on a stalled connection. Without this the job would
+    # run to GitHub's 360 minute default.
+    timeout-minutes: 15
     strategy:
+      fail-fast: false
       matrix:
-        templates: ${{ fromJSON(needs.detect-changes.outputs.templates) }}
+        template: ${{ fromJSON(needs.templates.outputs.all) }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
 
-      - name: Smoke test for '${{ matrix.templates }}'
-        id: smoke_test
-        uses: ./.github/actions/smoke-test
-        with:
-          template: "${{ matrix.templates }}"
+      # Not installed on the runner, and deliberately not installed by
+      # build.sh: the dev container gets the CLI from a Feature, and a second
+      # root-owned npm install there collides with it.
+      - name: "Install latest devcontainer CLI"
+        run: npm install -g @devcontainers/cli
+
+      - name: "Smoke test for '${{ matrix.template }}'"
+        run: make test-${{ matrix.template }}
+
+  # One check whose name does not change as the matrix grows, so that the
+  # branch ruleset has a single thing to require.
+  ci:
+    if: always()
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Fail if any template did not pass"
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: |
+          echo "test: ${{ needs.test.result }}"
+          exit 1

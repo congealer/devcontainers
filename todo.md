@@ -24,7 +24,7 @@
 
 ## 진행 상황
 
-작업 브랜치는 `rohd`.
+작업 브랜치는 `ubuntu`.
 
 - [x] **hello/color 제거**
       템플릿 둘과 테스트 삭제, 루트 README 목록 정리, `.gitignore` 추가, `devcontainer-lock.json` 커밋
@@ -54,7 +54,10 @@
       - [x] 테스트 재작성 — 검사 18 개. `resolute`/`noble` 둘 다 18/18
       - [ ] **발행** — `make prepare` 로 `2.0.0`. 발행된 `1.0.0` 의
             `documentationURL` 이 `src/hello` 라 404 다
-- [ ] **CI 정비** (§5) — 그 다음
+- [ ] **CI 정비** (§5)
+      - [x] §5-1 테스트 워크플로 — 다시 씀. `make test` 29/29 통과
+      - [x] `release.yaml` — 주석 두 곳, `generate-docs` 는 계속 끔
+      - [ ] 릴리스 사전 점검 (`prepare.py --check` + `make release` 가 거치게)
 
 ---
 
@@ -600,7 +603,7 @@ _Note: This file was auto-generated from the [devcontainer-template.json](https:
 - [x] **`make` 타깃 표와 `clean`/`distclean` 이 지우는 것** — §4-1 이후.
 - [x] **문서 생성 규칙** — README 는 자동 생성물이니 `NOTES.md` 를 고치라는 안내 (§4-3).
 - [x] **릴리스 절차와 주의점** — §4-2 의 체크리스트.
-- [ ] **CI 절 갱신** — §5 가 끝나면 실제 형상과 맞는지 대조. 지금은 목표 형상을 적어뒀다.
+- [x] ~~**CI 절 갱신**~~ → 실제 형상으로 다시 썼다. 트러블슈팅 절도 새로 넣었다.
 - [x] **루트 README 의 "Testing Templates" 절을 dev.md 로 넘긴다** — 지금 로컬 실행법이
       양쪽에 중복돼 있다.
 
@@ -634,7 +637,7 @@ _Note: This file was auto-generated from the [devcontainer-template.json](https:
 
 ### 5-1. 테스트 워크플로
 
-- [ ] **매트릭스를 리포에서 읽는다.** devcon-features 의 `test.yaml` 방식:
+- [x] ~~**매트릭스를 리포에서 읽는다**~~ → `ls src | jq -R . | jq -sc .` devcon-features 의 `test.yaml` 방식:
 
       ```bash
       all=$(ls src | jq -R . | jq -sc .)
@@ -644,45 +647,71 @@ _Note: This file was auto-generated from the [devcontainer-template.json](https:
       지금은 정확히 반대라 손으로 적은 목록을 쓴다. 이 방식이면 **죽은 필터 문제가
       통째로 사라진다** — paths-filter 자체가 없어지므로.
 
-- [ ] **`continue-on-error: true` 를 뗀다.**
+- [x] ~~**`continue-on-error: true` 를 뗀다**~~
       [test-pr.yaml:21](.github/workflows/test-pr.yaml#L21).
       **테스트가 실패해도 PR 체크가 초록으로 뜬다.** 위 필터 문제와 겹쳐서, `distro` 체크가
       공허하게 통과한다는 걸 CI 가 잡을 수 없었던 이유이기도 하다.
 
-- [ ] **`run:` 을 make 타깃으로.** `run: make test-${{ matrix.template }}` 형태.
+- [x] ~~**`run:` 을 make 타깃으로**~~ `run: make test-${{ matrix.template }}` 형태.
       로컬과 CI 가 같은 경로를 탄다.
 
-- [ ] **`npm install -g @devcontainers/cli` 를 워크플로에 넣는다.** `build.sh` 에 있던 것을
+- [x] ~~**`npm install -g @devcontainers/cli` 를 워크플로에 넣는다**~~ `build.sh` 에 있던 것을
       뺐다 — 개발 컨테이너에는 feature 로 이미 깔려 있어 root 소유 설치와 충돌(EACCES)했다.
       러너에는 CLI 가 없으므로 **CI 쪽에서 다시 넣어야 한다.** 상류(features, templates,
       template-starter)도 전부 워크플로 스텝으로 설치한다.
 
-- [ ] **`smoke-test` composite action 의 거취.** Makefile 이 `build.sh`/`test.sh` 로직을
+- [x] ~~**`smoke-test` composite action 의 거취**~~ → **삭제.** 스크립트는 `script/` 로 옮겼다. Makefile 이 `build.sh`/`test.sh` 로직을
       흡수하면 이 action 은 사라진다. 감싸기만 하면 남는다 (§4-1 결정에 따라).
 
-- [ ] **`ci:` 집계 job.** 매트릭스가 늘어도 이름이 안 바뀌는 체크 하나 —
+- [x] ~~**`ci:` 집계 job**~~ 매트릭스가 늘어도 이름이 안 바뀌는 체크 하나 —
       branch ruleset 이 하나만 걸면 되게. devcon-features `test.yaml` 의 마지막 job.
 
-- [ ] **위생.** `actions/checkout@v3` → `v4`
+- [x] ~~**위생**~~ → `checkout@v7`(v4 가 아니라), 중복 checkout 제거, cancel-in-progress, `timeout-minutes: 15`. `actions/checkout@v3` → `v4`
       ([test-pr.yaml:26](.github/workflows/test-pr.yaml#L26),
       [smoke-test/action.yaml:12](.github/actions/smoke-test/action.yaml#L12)),
       `concurrency` 그룹 추가, 중복 checkout 정리
       (test-pr.yaml 에서 이미 했는데 composite action 이 또 한다).
 
-- [ ] **`push: branches: [main]` 트리거를 넣을지.** 지금은 `pull_request` 뿐이라 main 에
+- [x] ~~**`push: branches: [main]` 트리거**~~ → 넣었다. 지금은 `pull_request` 뿐이라 main 에
       직접 푸시하면 아무것도 안 돈다. devcon-features 는 push/PR/dispatch 셋 다.
 
 ### 5-2. 그 밖
 
-- [ ] **`validate` 워크플로.** devcon-features 의 `validate.yml` 이
-      `devcontainers/action@v1` 의 `validate-only: "true"` 로 메타데이터를 검증한다.
-- [ ] **버전 범프 검사.** PR 에서 "바뀐 템플릿의 `version` 이 올랐는가". `make prepare` 를
-      빠뜨렸을 때 조용히 no-op 되는 걸 막는다.
-- [ ] **문서 PR 스텝.** §4-3 을 하면 `generate-docs` 를 켜고, 뒤에
-      `automated-documentation-update-*` PR 을 여는 스텝을 붙인다 (devcon-features 방식).
-      `release.yaml` 의 `generate-docs: "false"` 도 그때 켠다.
-- [ ] **[dev.md](dev.md) 의 CI 절 대조.** 지금 목표 형상을 적어둔 상태다. 실제와 맞는지
-      확인하고, 범위 밖으로 뺀 `release.yaml` 과 `action.yaml` 파일명을 넣을지 정한다.
+- [x] ~~**`validate` 워크플로**~~ → **안 넣는다** (결정됨).
+      CLI 에 검증 명령이 없어서 (`apply`/`publish`/`metadata`/`generate-docs` 가 전부)
+      `devcontainers/action@v1` 의 `validate-only` 로만 돌릴 수 있다. **CI 가 검사하는 것은
+      로컬에서 make 로도 할 수 있어야 한다**는 원칙에 어긋난다.
+
+      상류 전례도 반대쪽이다 — `validate.yml` 은 **feature-starter 에만** 있고
+      `template-starter` 와 `devcontainers/templates` 에는 없다. devcon-features 가 갖고
+      있는 건 거기서 출발했기 때문이다.
+- [ ] **릴리스 사전 점검** (결정됨). `prepare.py` 에 `--check` 를 붙이고 `make release` 가
+      발행 전에 거치게 한다. `changed` 인 템플릿이 있으면 종료 코드 1 로 멈춘다.
+      판정은 `state()` 를 그대로 쓴다 — "버전이 박힌 커밋 이후 `src/<id>` 가 바뀌었는가".
+
+      **막으려는 것**: 버전을 안 올리고 발행하면 CLI 가 그 템플릿을 건너뛰는데
+      **종료 코드가 0 이라 성공으로 보인다.** 경고 한 줄(`(!) WARNING: Version X already
+      exists, skipping X...`)만 나온다. 고쳐서 올린 줄 알았는데 레지스트리에는 옛 것이
+      그대로 남는다.
+
+      **덤으로 컬렉션 어긋남도 막힌다.** 컬렉션 메타데이터는 버전 검사 없이 매번
+      `src/` 에서 새로 만들어 올라가므로, 템플릿만 건너뛰면 둘이 갈라진다.
+      지금 실제로 그런 상태다 — 컬렉션의 ubuntu `documentationURL` 은 `/src/ubuntu`,
+      템플릿 아티팩트 쪽은 `/src/hello`.
+
+      **`release.yaml` 도 `make release` 를 부르게 바꾼다.** 그러면 검사를 한 곳에만 쓰고
+      두 경로가 다 걸린다. 러너에 `gh` 가 있으므로
+      `env: GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}` 한 줄이면 된다.
+
+      ~~PR 마다 버전 범프를 요구하는 안은 버렸다~~ — 아직 낼 생각이 없는 PR 까지 전부
+      빨간불이 된다.
+- [x] ~~**문서 PR 스텝**~~ → **`generate-docs` 는 계속 끈다** (결정됨). `make prepare` 가
+      버전을 쓰기 전에 `make docs` 를 돌리므로, 발행 시점에 README 는 이미 최신이다.
+      CI 에서 또 생성하면 아무도 커밋해 돌려놓지 않는 diff 만 생긴다.
+      `release.yaml` 의 낡은 주석("README 는 손으로 쓴다")도 고쳤다.
+
+- [x] ~~**[dev.md](dev.md) 의 CI 절 대조**~~ → 실제 형상으로 다시 썼다.
+      `release.yaml` 은 릴리스 절에서 다루고, `action.yaml` 은 없어졌다.
 
 ---
 
@@ -706,9 +735,8 @@ _Note: This file was auto-generated from the [devcontainer-template.json](https:
 - [x] **루트 README 갱신** — `rohd` 를 템플릿 목록에 추가, 개발자용 내용은 [dev.md](dev.md) 로
       이관(§4-4).
 
-- [ ] **리포 토픽에 `devcontainer-templates` 추가.** 없으면 containers.dev 색인에 안 잡히고
-      VS Code 의 hover·자동완성이 안 된다 (HANDOFF.md 가 `congealer/devcon-features` 에서
-      같은 문제를 겪었다고 기록).
+- [x] ~~**리포 토픽에 `devcontainer-templates` 추가**~~ → **안 한다** (결정됨).
+      containers.dev 색인에 넣을 생각이 없다.
 
 ---
 

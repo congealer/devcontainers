@@ -24,13 +24,9 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"hoovercj.vscode-power-mode",
-				"christian-kohler.path-intellisense",
-				"ryu1kn.partial-diff",
-				"VisualStudioExptTeam.vscodeintellicode",
-				"VisualStudioExptTeam.intellicode-api-usage-examples",
 				"mhutchie.git-graph",
-				"ms-vscode.cpptools"
+				"ryu1kn.partial-diff",
+				"christian-kohler.path-intellisense"
 			]
 		}
 	}

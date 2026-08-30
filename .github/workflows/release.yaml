@@ -1,8 +1,8 @@
 name: "Release dev container templates"
 
-# Publishing is normally done locally -- `devcontainer templates publish`, later
-# `make release` -- so this never fires on its own. It is the fallback for when
-# a release has to go out from somewhere without credentials to hand.
+# Publishing is normally done locally with `make release`, so this never fires
+# on its own. It is the fallback for when a release has to go out from
+# somewhere without credentials to hand.
 #
 # There is no tag trigger on purpose: a version belongs to a template, not to
 # the repository. One repo tag cannot express "ubuntu 1.2.0 and rohd 0.3.1".
@@ -24,9 +24,10 @@ jobs:
         with:
           publish-templates: "true"
           base-path-to-templates: "./src"
-          # README.md under src/<id> is hand-written for now. Turning this on
-          # would regenerate it from devcontainer-template.json and drop
-          # everything written by hand.
+          # README.md under src/<id> is generated, but `make prepare` already
+          # runs `make docs` before the version is committed, so it is current
+          # by the time anything is published. Regenerating here would only
+          # produce a diff nobody commits back.
           generate-docs: "false"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -77,7 +77,7 @@ release-check:  ## Fail if a template changed since its version was committed
 
 # '-p' wants the folder the templates live in, despite the help text calling it
 # the project root that holds src/ and test/. Given '.' it walks every child of
-# the repository root -- test/, todo.md and all -- looking for a
+# the repository root -- test/, dev.md and all -- looking for a
 # devcontainer-template.json. There is no --namespace either; owner and repo
 # are separate flags.
 docs:  ## Regenerate every src/<template>/README.md from its metadata and NOTES.md
